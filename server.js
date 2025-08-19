@@ -8,27 +8,72 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Store player ready states
+let playersReady = {};
+
 // Serve all files in the "public" folder
 app.use(express.static("public"));
 
 // When a player connects
 io.on("connection", (socket) => {
   console.log("A player connected:", socket.id);
+  
+  // Initialize player as not ready
+  playersReady[socket.id] = false;
+  
+  // Send current ready list to new player
+  socket.emit("allPlayersReady", playersReady);
+  
+  // Broadcast updated player count to everyone
+  io.emit("allPlayersReady", playersReady);
 
-  // Example: listen for a "playCard" event
-  socket.on("playCard", (card) => {
-    console.log(`Player ${socket.id} played:`, card);
+  // Handle ready state changes
+  socket.on("toggleReady", (data) => {
+    console.log(`Player ${socket.id} ready state:`, data.ready);
+    playersReady[socket.id] = data.ready;
+    
+    // Broadcast to everyone including sender
+    io.emit("playerReady", { playerId: socket.id, ready: data.ready });
+    io.emit("allPlayersReady", playersReady);
+  });
 
-    // Send the played card to everyone else in the room
+  // Handle card plays
+  socket.on("playCard", (data) => {
+    console.log(`Player ${socket.id} played card:`, data.card.name, "in lane", data.lane);
     socket.broadcast.emit("cardPlayed", {
       playerId: socket.id,
-      card: card
+      card: data.card,
+      lane: data.lane,
+      type: data.type,
+      gameState: data.gameState
+    });
+  });
+
+  // Handle dice rolls
+  socket.on("rollDice", (data) => {
+    console.log(`Player ${socket.id} rolled:`, data.roll);
+    socket.broadcast.emit("diceRolled", {
+      playerId: socket.id,
+      roll: data.roll,
+      totalMagic: data.totalMagic
+    });
+  });
+
+  // Handle turn ends
+  socket.on("endTurn", (data) => {
+    console.log(`Player ${socket.id} ended turn`);
+    socket.broadcast.emit("turnEnded", {
+      playerId: socket.id,
+      newCurrentPlayer: data.newCurrentPlayer,
+      currentTurn: data.currentTurn
     });
   });
 
   // When a player disconnects
   socket.on("disconnect", () => {
     console.log("A player disconnected:", socket.id);
+    delete playersReady[socket.id];
+    io.emit("allPlayersReady", playersReady);
   });
 });
 

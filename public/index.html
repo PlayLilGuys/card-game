@@ -998,6 +998,24 @@
             updateTurnDisplay();
         });
 
+        // Listen for dice rolls from other players
+        socket.on("diceRolled", (data) => {
+            if (data.playerId !== socket.id) {
+                console.log(`Player ${data.playerId} rolled ${data.roll}`);
+                showCombatLog(`Opponent rolled ${data.roll} (${data.totalMagic} total magic)`, 2000);
+            }
+        });
+
+        // Listen for turn ends from other players
+        socket.on("turnEnded", (data) => {
+            if (data.playerId !== socket.id) {
+                currentPlayer = data.newCurrentPlayer;
+                currentTurn = data.currentTurn;
+                updateTurnDisplay();
+                showCombatLog(`Opponent ended their turn`, 1500);
+            }
+        });
+
         // Function to send card play to server
         function broadcastCardPlay(card, lane, type) {
             if (socketConnected) {
@@ -1989,6 +2007,15 @@
             document.getElementById('turn-display').textContent = displayText;
             updateButtonStates();
             updateSmackButtonStates();
+            
+            // Broadcast dice roll to other players
+            if (socketConnected) {
+                socket.emit("rollDice", {
+                    playerId: socket.id,
+                    roll: roll,
+                    totalMagic: totalMagic
+                });
+            }
         }
 
         function endTurn() {
@@ -2012,6 +2039,15 @@
             updateHandDisplay();
             updateSmackButtonStates();
             updateButtonStates();
+            
+            // Broadcast turn end to other players
+            if (socketConnected) {
+                socket.emit("endTurn", {
+                    playerId: socket.id,
+                    newCurrentPlayer: currentPlayer,
+                    currentTurn: currentTurn
+                });
+            }
         }
 
         function showSmackOptions() {
