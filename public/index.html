@@ -1,0 +1,2088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Wars Game</title>
+    <link href="https://fonts.googleapis.com/css?family=Archivo+Black&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Archivo Black', Arial, sans-serif;
+            background: #f0f0f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border: 3px solid black;
+            border-radius: 15px;
+            padding: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 20px;
+            margin: 10px 0;
+            justify-content: center;
+            padding: 0 20px;
+            align-items: flex-start;
+        }
+
+        .left-panel {
+            flex: 0 0 auto;
+            margin-right: 40px;
+        }
+
+        .right-panel {
+            width: 250px;
+            background: #f5f5f5;
+            border: 2px solid black;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+        }
+
+        .controls-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .player-info {
+            background: #333;
+            border: 2px solid black;
+            border-radius: 6px;
+            color: white;
+            width: 100%;
+            padding: 10px;
+        }
+
+        .player2-info {
+            background: #333;
+            border: 2px solid black;
+            border-radius: 6px;
+            color: white;
+            margin-bottom: 5px;
+        }
+
+        .wizard-stats {
+            display: flex;
+            gap: 10px;
+            padding: 5px;
+            justify-content: center;
+        }
+
+        .stat {
+            background: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            min-width: 80px;
+            justify-content: center;
+        }
+
+        .board-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 10px;
+            gap: 20px;
+        }
+
+        .board {
+            display: flex;
+            gap: 25px;
+            padding: 15px;
+            background: #f5f5f5;
+            border: 2px solid black;
+            border-radius: 10px;
+        }
+
+        .lane {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 220px;
+        }
+
+        .player-area {
+            position: relative;
+            height: 240px;
+            margin: 2px 0;
+        }
+
+        .player-area[data-player="2"] .monster-slot {
+            position: absolute;
+            top: 0;
+            right: 0;
+            z-index: 2;
+        }
+
+        .player-area[data-player="2"] .building-slot {
+            position: absolute;
+            top: 0;
+            right: 40px;
+            z-index: 1;
+        }
+
+        .player-area[data-player="2"] .building-slot:hover {
+            transform: translateX(-40px);
+            z-index: 3;
+        }
+
+        .player-area[data-player="1"] .monster-slot {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            z-index: 2;
+        }
+
+        .player-area[data-player="1"] .building-slot {
+            position: absolute;
+            bottom: 0;
+            right: 40px;
+            z-index: 1;
+        }
+
+        .player-area[data-player="1"] .building-slot:hover {
+            transform: translateX(-40px);
+            z-index: 3;
+        }
+
+        .card-slot {
+            width: 190px;
+            height: 230px;
+            border: 2px dashed #666;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-slot:hover {
+            border-color: black;
+            background: #f9f9f9;
+        }
+
+        .card-slot.valid-drop-target {
+            border: 3px solid #4CAF50;
+            background: linear-gradient(45deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.3));
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+
+        .card-slot.invalid-drop-target {
+            border: 3px solid #f44336;
+            background: linear-gradient(45deg, rgba(244, 67, 54, 0.1), rgba(244, 67, 54, 0.2));
+        }
+
+        .slot-label {
+            color: #999;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .monster-slot.slot-label::before {
+            content: "🗡 Monster";
+        }
+
+        .building-slot.slot-label::before {
+            content: "⬛ Building";
+        }
+
+        .card-stats-display {
+            width: 190px;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 5px 8px;
+            font-size: 14px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            border: 1px solid #333;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+
+        /* Add positioning for player 1's stats (bottom) */
+        .player-area[data-player="1"] .card-stats-display {
+            bottom: -35px;
+        }
+
+        /* Add positioning for player 2's stats (top) */
+        .player-area[data-player="2"] .card-stats-display {
+            top: -35px;
+        }
+
+        .deck-areas {
+            position: absolute;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .deck {
+            width: 140px;
+            height: 180px;
+            margin: 0 auto;
+            background: #333;
+            border: 2px solid black;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .deck:hover:not(.disabled) {
+            background: #555;
+            transform: scale(1.05);
+        }
+
+        .deck:disabled, .deck.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #666;
+        }
+
+        .deck-label {
+            font-size: 12px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .deck-count {
+            font-size: 16px;
+        }
+
+        .turn-info {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f0f0f0;
+            border: 2px solid black;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 18px;
+            color: black;
+        }
+
+        .field-controls {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+        }
+
+        .field-btn[id*="roll-dice"] {
+            order: 1;
+        }
+
+        .field-btn.smack-action {
+            order: 2;
+        }
+
+        .field-btn[id*="end-turn"] {
+            order: 3;
+        }
+
+        .field-btn {
+            width: 100%;
+            height: 40px;
+            background: #333;
+            color: white;
+            border: 2px solid black;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .field-btn:hover:not(:disabled) {
+            background: #555;
+            color: white;
+        }
+
+        .field-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #ccc;
+        }
+
+        .hand-area {
+            position: relative;
+            width: 100%;
+            height: 250px;
+            margin: 5px 0;
+            margin-top: 10px;
+        }
+
+        .hand-header {
+            display: none;
+        }
+
+        .hand-cards {
+            position: relative;
+            width: 180px;
+            height: 250px;
+            perspective: 1000px;
+            margin: 0 auto;
+        }
+
+        .card {
+            position: absolute;
+            width: 180px;
+            height: 240px;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            border: 2px solid black;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            transform-origin: bottom center;
+            cursor: pointer;
+
+        }
+
+        #player1-hand .card {
+            transform: translateY(0);
+            z-index: 1;
+        }
+
+        #player1-hand .card:not(:first-child) {
+            transform: translateY(2px);
+            z-index: auto;
+        }
+
+        #player1-hand:hover .card {
+            transform: translateY(0) !important;
+        }
+
+        #player1-hand:hover .card:nth-child(1) { transform: translateX(-80px) !important; z-index: 1; }
+        #player1-hand:hover .card:nth-child(2) { transform: translateX(-40px) !important; z-index: 2; }
+        #player1-hand:hover .card:nth-child(3) { transform: translateX(0) !important; z-index: 3; }
+        #player1-hand:hover .card:nth-child(4) { transform: translateX(40px) !important; z-index: 4; }
+        #player1-hand:hover .card:nth-child(5) { transform: translateX(80px) !important; z-index: 5; }
+
+        #player1-hand .card:hover {
+            transform: translateY(-20px) scale(1.1) !important;
+            z-index: 10 !important;
+        }
+
+        .dice-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            perspective: 1000px;
+            z-index: 2000;
+            display: none;
+        }
+
+        .dice-container.show {
+            display: block;
+        }
+
+        .die {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: rollDie 1s ease-out forwards;
+        }
+
+        .die-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: white;
+            border: 2px solid black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            font-weight: bold;
+        }
+
+        .front  { transform: translateZ(50px); }
+        .back   { transform: rotateY(180deg) translateZ(50px); }
+        .right  { transform: rotateY(90deg) translateZ(50px); }
+        .left   { transform: rotateY(-90deg) translateZ(50px); }
+        .top    { transform: rotateX(90deg) translateZ(50px); }
+        .bottom { transform: rotateX(-90deg) translateZ(50px); }
+
+        @keyframes rollDie {
+            0% { 
+                transform: rotateX(0) rotateY(0) rotateZ(0); 
+            }
+            100% { 
+                transform: rotateX(720deg) rotateY(360deg) rotateZ(360deg);
+            }
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            background: black;
+            border-radius: 50%;
+            position: absolute;
+        }
+
+        .dot.center { 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+        }
+        .dot.top-left { top: 20%; left: 20%; }
+        .dot.top-right { top: 20%; right: 20%; }
+        .dot.middle-left { top: 50%; left: 20%; transform: translateY(-50%); }
+        .dot.middle-right { top: 50%; right: 20%; transform: translateY(-50%); }
+        .dot.bottom-left { bottom: 20%; left: 20%; }
+        .dot.bottom-right { bottom: 20%; right: 20%; }
+
+        .played-card {
+            width: 190px;
+            height: 230px;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            border: 2px solid black;
+            border-radius: 8px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+        }
+
+        .card-slot:not(.slot-label) {
+            background: none;
+            border: none;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(10px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .damage-number {
+            position: absolute;
+            font-size: 18px;
+            font-weight: bold;
+            color: red;
+            pointer-events: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .combat-log {
+            display: none;
+            font-size: 16px;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border-radius: 8px;
+            border: 1px solid #444;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .combat-log.show {
+            display: block;
+        }
+
+        /* Add styles for the smack modal */
+        .smack-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #000;
+            color: white;
+            border: 3px solid white;
+            border-radius: 10px;
+            padding: 20px;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            min-width: 300px;
+        }
+
+        .smack-modal.show {
+            display: block;
+        }
+
+        .smack-modal h3 {
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .smack-modal p {
+            margin-bottom: 10px;
+            color: #ccc;
+        }
+
+        .smack-modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .smack-btn {
+            padding: 8px 16px;
+            border: 2px solid white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+            background: white;
+            color: black;
+        }
+
+        .smack-btn:hover {
+            background: #ccc;
+            border-color: #ccc;
+        }
+
+        .smack-btn.cancel {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .smack-btn.cancel:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .played-card.has-affordable-smack {
+            animation: wiggle 1s ease-in-out infinite;
+            cursor: pointer;
+        }
+
+        @keyframes wiggle {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(-2deg); }
+            75% { transform: rotate(2deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .player-info.player1-info {
+            text-align: center;
+        }
+
+        /* Multiplayer Status Styles */
+        .multiplayer-status {
+            background: #e8f4f8;
+            border: 2px solid #2196F3;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .connection-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        #connection-status {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .ready-btn {
+            background: #4CAF50;
+            color: white;
+            border: 2px solid #45a049;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: 'Archivo Black', Arial, sans-serif;
+        }
+
+        .ready-btn:hover {
+            background: #45a049;
+        }
+
+        .ready-btn:disabled {
+            background: #ccc;
+            border-color: #999;
+            cursor: not-allowed;
+        }
+
+        .players-ready {
+            display: flex;
+            justify-content: space-around;
+            font-size: 14px;
+        }
+
+        .players-ready div {
+            padding: 5px 10px;
+            border-radius: 4px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Removed Lil' Guys title -->
+        
+        <!-- Player 2 Info and Hand (Top) -->
+        <div class="player-info player2-info">
+            <div>Player 2 (Wizard)</div>
+            <div class="wizard-stats">
+                <div class="stat health">❤️ <span id="player2-health">25</span></div>
+                <div class="stat magic">✨ <span id="player2-magic">0</span></div>
+            </div>
+        </div>
+        <div class="hand-area" id="player2-hand-area">
+            <div class="hand-header">Player 2 Hand (<span id="player2-hand-count">5</span> cards)</div>
+            <div class="hand-cards" id="player2-hand"></div>
+        </div>
+
+        <div class="main-content">
+            <!-- Left Panel - Game Board -->
+            <div class="left-panel">
+                <div class="board-container">
+                    <div class="deck-areas">
+                        <div class="deck player2-deck" id="player2-deck">
+                            <div class="deck-label">P2 DECK</div>
+                            <div class="deck-count" id="player2-deck-count">30</div>
+                        </div>
+                        <div class="field-controls">
+                            <button class="field-btn" id="end-turn-left" onclick="endTurn()">End Turn</button>
+                        </div>
+                    </div>
+                    
+                    <div class="board">
+                        <!-- Lane 1 -->
+                        <div class="lane">
+                            <div class="lane-header">Lane 1</div>
+                            
+                            <!-- Player 2's stacked cards -->
+                            <div class="player-area" data-player="2">
+                                <div class="card-slot monster-slot slot-label" data-player="2" data-lane="1" data-type="monster"></div>
+                                <div class="card-slot building-slot slot-label" data-player="2" data-lane="1" data-type="building"></div>
+                                <div class="card-stats-display" id="stats-p2-l1-monster" style="display: none;"></div>
+                                <div class="card-stats-display" id="stats-p2-l1-building" style="display: none;"></div>
+                            </div>
+                            
+                            <!-- Player 1's stacked cards -->
+                            <div class="player-area" data-player="1">
+                                <div class="card-slot monster-slot slot-label" data-player="1" data-lane="1" data-type="monster"></div>
+                                <div class="card-slot building-slot slot-label" data-player="1" data-lane="1" data-type="building"></div>
+                                <div class="card-stats-display" id="stats-p1-l1-monster" style="display: none;"></div>
+                                <div class="card-stats-display" id="stats-p1-l1-building" style="display: none;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Lane 2 -->
+                        <div class="lane">
+                            <div class="lane-header">Lane 2</div>
+                            
+                            <!-- Player 2's stacked cards -->
+                            <div class="player-area" data-player="2">
+                                <div class="card-slot monster-slot slot-label" data-player="2" data-lane="2" data-type="monster"></div>
+                                <div class="card-slot building-slot slot-label" data-player="2" data-lane="2" data-type="building"></div>
+                                <div class="card-stats-display" id="stats-p2-l2-monster" style="display: none;"></div>
+                                <div class="card-stats-display" id="stats-p2-l2-building" style="display: none;"></div>
+                            </div>
+                            
+                            <!-- Player 1's stacked cards -->
+                            <div class="player-area" data-player="1">
+                                <div class="card-slot monster-slot slot-label" data-player="1" data-lane="2" data-type="monster"></div>
+                                <div class="card-slot building-slot slot-label" data-player="1" data-lane="2" data-type="building"></div>
+                                <div class="card-stats-display" id="stats-p1-l2-monster" style="display: none;"></div>
+                                <div class="card-stats-display" id="stats-p1-l2-building" style="display: none;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Lane 3 -->
+                        <div class="lane">
+                            <div class="lane-header">Lane 3</div>
+                            
+                            <!-- Player 2's stacked cards -->
+                            <div class="player-area" data-player="2">
+                                <div class="card-slot monster-slot slot-label" data-player="2" data-lane="3" data-type="monster"></div>
+                                <div class="card-slot building-slot slot-label" data-player="2" data-lane="3" data-type="building"></div>
+                                <div class="card-stats-display" id="stats-p2-l3-monster" style="display: none;"></div>
+                                <div class="card-stats-display" id="stats-p2-l3-building" style="display: none;"></div>
+                            </div>
+                            
+                            <!-- Player 1's stacked cards -->
+                            <div class="player-area" data-player="1">
+                                <div class="card-slot monster-slot slot-label" data-player="1" data-lane="3" data-type="monster"></div>
+                                <div class="card-slot building-slot slot-label" data-player="1" data-lane="3" data-type="building"></div>
+                                <div class="card-stats-display" id="stats-p1-l3-monster" style="display: none;"></div>
+                                <div class="card-stats-display" id="stats-p1-l3-building" style="display: none;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Lane 4 -->
+                        <div class="lane">
+                            <div class="lane-header">Lane 4</div>
+                            
+                            <!-- Player 2's stacked cards -->
+                            <div class="player-area" data-player="2">
+                                <div class="card-slot monster-slot slot-label" data-player="2" data-lane="4" data-type="monster"></div>
+                                <div class="card-slot building-slot slot-label" data-player="2" data-lane="4" data-type="building"></div>
+                                <div class="card-stats-display" id="stats-p2-l4-monster" style="display: none;"></div>
+                                <div class="card-stats-display" id="stats-p2-l4-building" style="display: none;"></div>
+                            </div>
+                            
+                            <!-- Player 1's stacked cards -->
+                            <div class="player-area" data-player="1">
+                                <div class="card-slot monster-slot slot-label" data-player="1" data-lane="4" data-type="monster"></div>
+                                <div class="card-slot building-slot slot-label" data-player="1" data-lane="4" data-type="building"></div>
+                                <div class="card-stats-display" id="stats-p1-l4-monster" style="display: none;"></div>
+                                <div class="card-stats-display" id="stats-p1-l4-building" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Player 1 Controls -->
+            <div class="right-panel">
+                <div class="controls-container">
+                    <!-- Player 1 Info -->
+                    <div class="player-info player1-info">
+                        <div>Player 1 (Wizard)</div>
+                        <div class="wizard-stats">
+                            <div class="stat health">❤️ <span id="player1-health">25</span></div>
+                            <div class="stat magic">✨ <span id="player1-magic">0</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Player 1 Deck -->
+                    <div class="deck" id="player1-deck">
+                        <div class="deck-label">P1 DECK</div>
+                        <div class="deck-count" id="player1-deck-count">30</div>
+                    </div>
+                    
+                    <!-- Player 1 Controls -->
+                    <div class="field-controls">
+                        <button class="field-btn" id="roll-dice" onclick="rollDice()">Roll Magic</button>
+                        <button class="field-btn smack-action" onclick="showSmackOptions()">Use Smack</button>
+                        <button class="field-btn" id="end-turn-right" onclick="endTurn()">End Turn</button>
+                    </div>
+                </div>
+
+                <!-- Player 1 Hand -->
+                <div class="hand-area" id="player1-hand-area">
+                    <div class="hand-header">Player 1 Hand (<span id="player1-hand-count">5</span> cards)</div>
+                    <div class="hand-cards" id="player1-hand"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Multiplayer Status -->
+        <div class="multiplayer-status" id="multiplayer-status">
+            <div class="connection-info">
+                <span id="connection-status">🔴 Not Connected</span>
+                <button class="ready-btn" id="ready-btn" onclick="toggleReady()">Ready Up</button>
+            </div>
+            <div class="players-ready" id="players-ready">
+                <div id="player1-ready">Player 1: Not Ready</div>
+                <div id="player2-ready">Player 2: Not Ready</div>
+            </div>
+        </div>
+
+        <!-- Turn Information -->
+        <div class="turn-info">
+            <span id="turn-display">Player 1's Turn - Turn 1</span>
+        </div>
+
+        <!-- Combat Log -->
+        <div class="combat-log" id="combat-log"></div>
+        
+        <!-- Smack Modal -->
+        <div class="smack-modal" id="smack-modal">
+            <h3 id="smack-title">Ability Name</h3>
+            <p><strong>Cost:</strong> <span id="smack-cost">0</span> Magic</p>
+            <p><strong>Description:</strong> <span id="smack-description">Description here</span></p>
+            <div class="smack-modal-buttons">
+                <button class="smack-btn use" id="use-smack-btn">Use Ability</button>
+                <button class="smack-btn cancel" id="cancel-smack-btn">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Dice Roller (Hidden by default) -->
+        <div class="dice-container" id="dice-container">
+            <div class="die">
+                <div class="die-face front">
+                    <div class="dot center"></div>
+                </div>
+                <div class="die-face back">
+                    <div class="dot top-left"></div>
+                    <div class="dot top-right"></div>
+                    <div class="dot middle-left"></div>
+                    <div class="dot middle-right"></div>
+                    <div class="dot bottom-left"></div>
+                    <div class="dot bottom-right"></div>
+                </div>
+                <div class="die-face right">
+                    <div class="dot top-left"></div>
+                    <div class="dot top-right"></div>
+                    <div class="dot bottom-left"></div>
+                    <div class="dot bottom-right"></div>
+                </div>
+                <div class="die-face left">
+                    <div class="dot top-left"></div>
+                    <div class="dot top-right"></div>
+                    <div class="dot center"></div>
+                    <div class="dot bottom-left"></div>
+                    <div class="dot bottom-right"></div>
+                </div>
+                <div class="die-face top">
+                    <div class="dot top-left"></div>
+                    <div class="dot center"></div>
+                    <div class="dot bottom-right"></div>
+                </div>
+                <div class="die-face bottom">
+                    <div class="dot top-left"></div>
+                    <div class="dot bottom-right"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Socket.IO multiplayer integration
+        const socket = io();
+        let socketConnected = false;
+        let playerReady = false;
+        let playersReadyList = {};
+
+        // Show when connected
+        socket.on("connect", () => {
+            console.log("Connected! ID:", socket.id);
+            socketConnected = true;
+            document.getElementById('connection-status').textContent = '🟢 Connected';
+            document.getElementById('ready-btn').disabled = false;
+        });
+
+        // Handle disconnection
+        socket.on("disconnect", () => {
+            console.log("Disconnected");
+            socketConnected = false;
+            document.getElementById('connection-status').textContent = '🔴 Disconnected';
+            document.getElementById('ready-btn').disabled = true;
+        });
+
+        // Listen for ready state changes
+        socket.on("playerReady", (data) => {
+            playersReadyList[data.playerId] = data.ready;
+            updateReadyDisplay();
+        });
+
+        // Listen for all players ready list
+        socket.on("allPlayersReady", (readyList) => {
+            playersReadyList = readyList;
+            updateReadyDisplay();
+        });
+
+        // Function to toggle ready state
+        function toggleReady() {
+            if (!socketConnected) return;
+            
+            playerReady = !playerReady;
+            socket.emit("toggleReady", { playerId: socket.id, ready: playerReady });
+            
+            const btn = document.getElementById('ready-btn');
+            btn.textContent = playerReady ? 'Not Ready' : 'Ready Up';
+            btn.style.background = playerReady ? '#f44336' : '#4CAF50';
+        }
+
+        // Function to update ready display
+        function updateReadyDisplay() {
+            const readyPlayerIds = Object.keys(playersReadyList);
+            const player1Div = document.getElementById('player1-ready');
+            const player2Div = document.getElementById('player2-ready');
+            
+            if (readyPlayerIds.length >= 1) {
+                const isReady1 = playersReadyList[readyPlayerIds[0]];
+                player1Div.textContent = `Player 1: ${isReady1 ? '✅ Ready' : '❌ Not Ready'}`;
+                player1Div.style.background = isReady1 ? '#c8e6c9' : '#ffcdd2';
+            }
+            
+            if (readyPlayerIds.length >= 2) {
+                const isReady2 = playersReadyList[readyPlayerIds[1]];
+                player2Div.textContent = `Player 2: ${isReady2 ? '✅ Ready' : '❌ Not Ready'}`;
+                player2Div.style.background = isReady2 ? '#c8e6c9' : '#ffcdd2';
+            }
+            
+            // Show total connected players
+            document.getElementById('connection-status').textContent = 
+                `🟢 Connected (${readyPlayerIds.length} players online)`;
+        }
+
+        // Listen for when another player plays a card
+        socket.on("cardPlayed", (data) => {
+            console.log(`Player ${data.playerId} played: ${data.card}`);
+            // Update game state based on opponent's move
+            if (data.playerId !== socket.id) {
+                handleOpponentCardPlay(data);
+            }
+        });
+
+        // Listen for game state updates
+        socket.on("gameStateUpdate", (newGameState) => {
+            gameState = newGameState;
+            updateAllDisplays();
+        });
+
+        // Listen for turn changes
+        socket.on("turnChanged", (data) => {
+            currentPlayer = data.currentPlayer;
+            currentTurn = data.currentTurn;
+            updateTurnDisplay();
+        });
+
+        // Function to send card play to server
+        function broadcastCardPlay(card, lane, type) {
+            if (socketConnected) {
+                socket.emit("playCard", {
+                    playerId: socket.id,
+                    card: card,
+                    lane: lane,
+                    type: type,
+                    gameState: gameState
+                });
+            }
+        }
+
+        // Function to handle opponent's card play
+        function handleOpponentCardPlay(data) {
+            // Apply the opponent's move to local game state
+            addCardToBoard(data.playerId === socket.id ? 1 : 2, data.lane, data.type, data.card);
+            updateAllDisplays();
+        }
+
+        // Function to update all displays
+        function updateAllDisplays() {
+            updateHandDisplay();
+            updateDeckCount();
+            updateButtonStates();
+            updateSmackButtonStates();
+            updateTurnDisplay();
+        }
+
+        // Function to update turn display
+        function updateTurnDisplay() {
+            document.getElementById('turn-display').textContent = `Player ${currentPlayer}'s Turn - Turn ${currentTurn}`;
+        }
+
+        let currentPlayer = 1;
+        let currentTurn = 1;
+        let draggedCard = null;
+        let cardIdCounter = 1;
+        let hasDrawnThisTurn = false;
+        
+        let gameState = {
+            player1: {
+                health: 25,
+                magic: 0,
+                hand: [],
+                deckSize: 30,
+                usedSmacks: [],
+                nextTurnMagicBonus: 0,
+                board: {
+                    1: { monster: null, building: null },
+                    2: { monster: null, building: null },
+                    3: { monster: null, building: null },
+                    4: { monster: null, building: null }
+                }
+            },
+            player2: {
+                health: 25,
+                magic: 0,
+                hand: [],
+                deckSize: 30,
+                usedSmacks: [],
+                nextTurnMagicBonus: 0,
+                board: {
+                    1: { monster: null, building: null },
+                    2: { monster: null, building: null },
+                    3: { monster: null, building: null },
+                    4: { monster: null, building: null }
+                }
+            }
+        };
+
+        const customCards = [
+            {
+                id: 'NN-1',
+                type: 'monster',
+                name: 'Card NN-1',
+                cost: 2,
+                attack: 8,
+                health: 6,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/NN-1.webp',
+                smack: {
+                    cost: 1,
+                    name: 'Spell Search',
+                    description: 'Search deck for spells and add to hand',
+                    effect: 'search_spells'
+                }
+            },
+            {
+                id: 'NN-2',
+                type: 'monster',
+                name: 'Card NN-2',
+                cost: 1,
+                attack: 4,
+                health: 5,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/NN-2.webp',
+                smack: {
+                    cost: 1,
+                    name: 'Magic Boost',
+                    description: '+2 magic on next turn',
+                    effect: 'magic_boost'
+                }
+            },
+            {
+                id: 'NN-3',
+                type: 'monster',
+                name: 'Card NN-3',
+                cost: 3,
+                attack: 5,
+                health: 10,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/NN-3.webp',
+                smack: {
+                    cost: 0,
+                    name: 'Empty Lane Power',
+                    description: 'Gain +1 attack for each of your empty monster lanes',
+                    effect: 'empty_lane_power'
+                }
+            },
+            {
+                id: 'NN-4',
+                type: 'monster',
+                name: 'Card NN-4',
+                cost: 1,
+                attack: 3,
+                health: 3,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/NN-4.webp',
+                smack: {
+                    cost: 2,
+                    name: 'Team Heal',
+                    description: 'Give all of your monsters +3 health',
+                    effect: 'team_heal'
+                }
+            },
+            {
+                id: 'NN-5',
+                type: 'monster',
+                name: 'Card NN-5',
+                cost: 1,
+                attack: 3,
+                health: 3,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/NN-5.webp',
+                smack: {
+                    cost: 1,
+                    name: 'Building Search',
+                    description: 'Search deck for a building and add to hand',
+                    effect: 'search_building'
+                }
+            },
+            {
+                id: 'BB-1',
+                type: 'building',
+                name: 'Power Boost Building',
+                cost: 1,
+                effect: 'Gives +3 Attack and +3 Health to monsters in this lane',
+                attackBonus: 3,
+                healthBonus: 3,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/BB-1.webp'
+            },
+            {
+                id: 'BB-2',
+                type: 'building',
+                name: 'Health Boost Building',
+                cost: 1,
+                effect: 'Gives +5 Health to monsters in this lane',
+                attackBonus: 0,
+                healthBonus: 5,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/BB-2.webp'
+            },
+            {
+                id: 'NN-6',
+                type: 'monster',
+                cost: 2,
+                attack: 6,
+                health: 2,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/NN-6.webp',
+                smack: {
+                    cost: 1,
+                    name: 'Area Damage',
+                    description: 'Deal 2 damage to all enemy monsters',
+                    effect: 'area_damage'
+                }
+            },
+            {
+                id: 'NN-7',
+                type: 'monster',
+                cost: 1,
+                attack: 5,
+                health: 3,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/NN-7.webp',
+                smack: {
+                    cost: 0,
+                    name: 'Monster Swap',
+                    description: 'Switch places with another of your monsters',
+                    effect: 'monster_swap'
+                }
+            },
+            {
+                id: 'NN-8',
+                type: 'monster',
+                cost: 2,
+                attack: 6,
+                health: 10,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/NN-8.webp',
+                smack: {
+                    cost: 2,
+                    name: 'Wizard Heal',
+                    description: 'Heal your wizard for 5',
+                    effect: 'heal_wizard'
+                }
+            },
+            {
+                id: 'NN-9',
+                type: 'monster',
+                cost: 1,
+                attack: 6,
+                health: 8,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/NN-9.webp',
+                smack: {
+                    cost: 2,
+                    name: 'Hand Refresh',
+                    description: 'Shuffle your hand into deck and draw 3 cards',
+                    effect: 'refresh_hand'
+                }
+            },
+            {
+                id: 'NN-10',
+                type: 'monster',
+                name: 'Card NN-10',
+                cost: 2,
+                attack: 13,
+                health: 6,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/NN-10.webp',
+                smack: {
+                    cost: 3,
+                    name: 'Force Discard',
+                    description: 'Opponent discards up to 2 cards',
+                    effect: 'force_discard_2'
+                }
+            },
+            {
+                id: 'NN-11',
+                type: 'monster',
+                name: 'Card NN-11',
+                cost: 1,
+                attack: 2,
+                health: 4,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/NN-11.webp',
+                smack: {
+                    cost: 1,
+                    name: 'Shield Up',
+                    description: 'Cannot take damage next turn',
+                    effect: 'shield_next_turn'
+                }
+            },
+            {
+                id: 'NN-12',
+                type: 'monster',
+                name: 'Card NN-12',
+                cost: 1,
+                attack: 1,
+                health: 12,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/NN-12.webp',
+                smack: {
+                    cost: 1,
+                    name: 'Draw 2',
+                    description: 'Draw 2 cards',
+                    effect: 'draw_2_cards'
+                }
+            },
+            {
+                id: 'BB-4',
+                type: 'building',
+                name: 'Damage Reduction Building',
+                cost: 1,
+                effect: 'Monsters in this lane take 2 less damage',
+                damageReduction: 2,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/BB-4.webp'
+            },
+            {
+                id: 'NN-13',
+                type: 'monster',
+                name: 'Card NN-13',
+                cost: 2,
+                attack: 3,
+                health: 9,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/NN-13.webp',
+                smack: {
+                    cost: 1,
+                    name: 'Direct Hit',
+                    description: 'Deal 2 damage directly to player 2’s wizard',
+                    effect: 'direct_hit_p2'
+                }
+            },
+            {
+                id: 'NN-14',
+                type: 'monster',
+                name: 'Card NN-14',
+                cost: 1,
+                attack: 2,
+                health: 3,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/NN-14.webp',
+                smack: {
+                    cost: 2,
+                    name: 'Team Power Up',
+                    description: 'Give +1 attack and +1 health to each of your monsters',
+                    effect: 'team_power_up'
+                }
+            },
+            {
+                id: 'BB-5',
+                type: 'building',
+                name: 'Power Up Building',
+                cost: 2,
+                effect: 'Gives the monster in this lane +1 attack at the start of each turn',
+                attackBonus: 0,
+                healthBonus: 0,
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/BB-5.webp'
+            },
+            {
+                id: 'SS-2',
+                type: 'spell',
+                name: 'Return Spell',
+                cost: 1,
+                effect: 'Move enemy monster back to their hand',
+                spellEffect: 'return_enemy_monster',
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/SS-2.webp'
+            }
+        ];
+
+        const cardPool = [];
+        customCards.forEach(card => {
+            cardPool.push({...card, uniqueId: cardIdCounter++});
+        });
+
+        function getRandomCard() {
+            if (cardPool.length === 0) {
+                return {
+                    uniqueId: cardIdCounter++,
+                    id: 'fallback',
+                    type: 'monster',
+                    name: 'Basic Monster',
+                    cost: 1,
+                    attack: 1,
+                    health: 1,
+                    image: null
+                };
+            }
+            const randomIndex = Math.floor(Math.random() * cardPool.length);
+            return cardPool.splice(randomIndex, 1)[0];
+        }
+
+        function createCardElement(card, player) {
+            const cardEl = document.createElement('div');
+            cardEl.className = 'card';
+            cardEl.dataset.cardId = card.uniqueId;
+            cardEl.dataset.player = player;
+            cardEl.draggable = true;
+            
+            if (card.image) {
+                cardEl.style.backgroundImage = `url(${card.image})`;
+            }
+            
+            cardEl.addEventListener('dragstart', handleDragStart);
+            cardEl.addEventListener('dragend', handleDragEnd);
+            
+            // Remove the cost overlay but keep the div structure
+            cardEl.innerHTML = '<div></div>';
+            
+            return cardEl;
+        }
+
+        function createPlayedCardElement(card) {
+            const cardEl = document.createElement('div');
+            cardEl.className = 'played-card';
+            cardEl.dataset.cardId = card.uniqueId;
+            
+            if (card.image) {
+                cardEl.style.backgroundImage = `url(${card.image})`;
+            }
+            
+            // Add empty div to maintain structure
+            cardEl.innerHTML = '<div></div>';
+            
+            if (card.type === 'monster' && card.smack) {
+                cardEl.addEventListener('click', function(e) {
+                    const player = parseInt(this.closest('[data-player]').dataset.player);
+                    const lane = parseInt(this.closest('[data-lane]').dataset.lane);
+                    showSmackModal(player, lane, card);
+                });
+            }
+            
+            return cardEl;
+        }
+
+        function handleDragStart(e) {
+            const player = parseInt(e.target.dataset.player);
+            if (player !== currentPlayer) {
+                e.preventDefault();
+                return;
+            }
+
+            const cardId = parseInt(e.target.dataset.cardId);
+            draggedCard = gameState[`player${currentPlayer}`].hand.find(card => card.uniqueId === cardId);
+            
+            e.target.classList.add('dragging');
+            updateDropZoneVisuals(true);
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            updateDropZoneVisuals(false);
+            draggedCard = null;
+        }
+
+        function updateDropZoneVisuals(isDragging) {
+            const slots = document.querySelectorAll('.card-slot');
+            
+            slots.forEach(slot => {
+                slot.classList.remove('valid-drop-target', 'invalid-drop-target');
+                
+                if (isDragging && draggedCard) {
+                    const player = parseInt(slot.dataset.player);
+                    const lane = parseInt(slot.dataset.lane);
+                    const slotType = slot.dataset.type;
+                    
+                    // Handle spell cards - they can target any enemy slot
+                    if (draggedCard.type === 'spell') {
+                        const canCast = player !== currentPlayer && 
+                                       gameState[`player${currentPlayer}`].magic >= draggedCard.cost;
+                        if (canCast) {
+                            slot.classList.add('valid-drop-target');
+                        } else {
+                            slot.classList.add('invalid-drop-target');
+                        }
+                    } else {
+                        // Original logic for monsters and buildings
+                        const canPlace = player === currentPlayer && 
+                                       draggedCard.type === slotType && 
+                                       gameState[`player${currentPlayer}`].board[lane][slotType] === null &&
+                                       gameState[`player${currentPlayer}`].magic >= draggedCard.cost;
+                        
+                        if (canPlace) {
+                            slot.classList.add('valid-drop-target');
+                        } else if (player === currentPlayer && draggedCard.type === slotType) {
+                            slot.classList.add('invalid-drop-target');
+                        }
+                    }
+                }
+            });
+        }
+
+        function applyBuildingEffects(player, lane, monster) {
+            const building = gameState[`player${player}`].board[lane].building;
+            if (building && building.type === 'building') {
+                monster.attack += building.attackBonus || 0;
+                monster.health += building.healthBonus || 0;
+                monster.maxHealth = monster.health;
+            }
+        }
+
+        function updateMonsterStats(player, lane) {
+            const monster = gameState[`player${player}`].board[lane].monster;
+            if (monster) {
+                const statsDisplay = document.getElementById(`stats-p${player}-l${lane}-monster`);
+                if (statsDisplay) {
+                    statsDisplay.innerHTML = `
+                        <div class="stats-attack">⚔️${monster.attack}</div>
+                        <div class="stats-health">❤️${monster.health}</div>
+                    `;
+                }
+            }
+        }
+
+        function showSmackModal(player, lane, card) {
+            // Return early if it's not current player's card or ability was used
+            if (player !== currentPlayer) return;
+            if (gameState[`player${currentPlayer}`].usedSmacks.includes(card.uniqueId)) {
+                showCombatLog('This monster has already used its Smack ability this turn!', 1500);
+                return;
+            }
+
+            const canAfford = gameState[`player${currentPlayer}`].magic >= card.smack.cost;
+            if (!canAfford) {
+                showCombatLog('Not enough magic to use this ability!', 1500);
+                return;
+            }
+
+            const modal = document.getElementById('smack-modal');
+            const title = document.getElementById('smack-title');
+            const cost = document.getElementById('smack-cost');
+            const description = document.getElementById('smack-description');
+            const useBtn = document.getElementById('use-smack-btn');
+
+            title.textContent = card.smack.name;
+            cost.textContent = card.smack.cost;
+            description.textContent = card.smack.description;
+            
+            useBtn.disabled = !canAfford;
+            useBtn.onclick = () => useSmackAbility(player, lane, card);
+
+            modal.classList.add('show');
+        }
+
+        function useSmackAbility(player, lane, card) {
+            gameState[`player${currentPlayer}`].magic -= card.smack.cost;
+            document.getElementById(`player${currentPlayer}-magic`).textContent = gameState[`player${currentPlayer}`].magic;
+
+            gameState[`player${currentPlayer}`].usedSmacks.push(card.uniqueId);
+
+            switch (card.smack.effect) {
+                case 'search_spells':
+                    showCombatLog('Searched deck for spells (not implemented yet)', 2000);
+                    break;
+                case 'magic_boost':
+                    gameState[`player${currentPlayer}`].nextTurnMagicBonus += 2;
+                    showCombatLog('Gaining +2 magic next turn!', 2000);
+                    break;
+                case 'empty_lane_power':
+                    let emptyLanes = 0;
+                    for (let lane = 1; lane <= 4; lane++) {
+                        if (!gameState[`player${currentPlayer}`].board[lane].monster) {
+                            emptyLanes++;
+                        }
+                    }
+                    card.attack += emptyLanes;
+                    updateMonsterStats(currentPlayer, lane);
+                    showCombatLog(`Gained +${emptyLanes} attack from empty lanes!`, 2000);
+                    break;
+                case 'team_heal':
+                    let healedMonsters = 0;
+                    for (let lane = 1; lane <= 4; lane++) {
+                        const monster = gameState[`player${currentPlayer}`].board[lane].monster;
+                        if (monster) {
+                            monster.health += 3;
+                            healedMonsters++;
+                            updateMonsterStats(currentPlayer, lane);
+                        }
+                    }
+                    showCombatLog(`Healed all monsters for +3 health!`, 2000);
+                    break;
+                case 'search_building':
+                    const buildingIndex = cardPool.findIndex(c => c.type === 'building');
+                    if (buildingIndex >= 0) {
+                        const buildingCard = cardPool.splice(buildingIndex, 1)[0];
+                        gameState[`player${currentPlayer}`].hand.push(buildingCard);
+                        updateHandDisplay();
+                        showCombatLog(`Added a building card to hand!`, 2000);
+                    } else {
+                        showCombatLog('No building cards left in deck!', 2000);
+                    }
+                    break;
+                case 'area_damage':
+                    let hitCount = 0;
+                    const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+                    for (let lane = 1; lane <= 4; lane++) {
+                        const enemyMonster = gameState[`player${enemyPlayer}`].board[lane].monster;
+                        if (enemyMonster) {
+                            enemyMonster.health -= 2;
+                            hitCount++;
+                            if (enemyMonster.health <= 0) {
+                                gameState[`player${enemyPlayer}`].board[lane].monster = null;
+                                const slot = document.querySelector(`[data-player="${enemyPlayer}"][data-lane="${lane}"][data-type="monster"]`);
+                                const statsDisplay = document.getElementById(`stats-p${enemyPlayer}-l${lane}-monster`);
+                                if (slot) {
+                                    slot.innerHTML = '';
+                                    slot.classList.add('slot-label');
+                                    slot.style.border = '2px dashed #666';
+                                }
+                                if (statsDisplay) {
+                                    statsDisplay.style.display = 'none';
+                                }
+                            } else {
+                                updateMonsterStats(enemyPlayer, lane);
+                            }
+                        }
+                    }
+                    showCombatLog(`Hit ${hitCount} enemies for 2 damage!`, 2000);
+                    break;
+                case 'monster_swap':
+                    showCombatLog('Select another monster to swap with', 2000);
+                    break;
+                case 'heal_wizard':
+                    gameState[`player${currentPlayer}`].health += 5;
+                    if (gameState[`player${currentPlayer}`].health > 25) {
+                        gameState[`player${currentPlayer}`].health = 25;
+                    }
+                    document.getElementById(`player${currentPlayer}-health`).textContent = gameState[`player${currentPlayer}`].health;
+                    checkGameOver();
+                    showCombatLog(`Healed wizard for 5!`, 2000);
+                    break;
+                case 'refresh_hand':
+                    const currentHand = gameState[`player${currentPlayer}`].hand;
+                    currentHand.forEach(card => cardPool.push(card));
+                    gameState[`player${currentPlayer}`].hand = [];
+                    for (let i = 0; i < 3; i++) {
+                        if (cardPool.length > 0) {
+                            const newCard = getRandomCard();
+                            gameState[`player${currentPlayer}`].hand.push(newCard);
+                        }
+                    }
+                    updateHandDisplay();
+                    showCombatLog(`Shuffled hand and drew 3 new cards!`, 2000);
+                    break;
+                case 'shield_next_turn':
+                    gameState[`player${currentPlayer}`].shielded = true;
+                    showCombatLog(`Shielded from damage next turn!`, 2000);
+                    break;
+                case 'draw_2_cards':
+                    for (let i = 0; i < 2; i++) {
+                        drawCard(currentPlayer);
+                    }
+                    updateHandDisplay();
+                    showCombatLog(`Drew 2 cards!`, 2000);
+                    break;
+                case 'direct_hit_p2':
+                    gameState.player2.health -= 2;
+                    if (gameState.player2.health < 0) gameState.player2.health = 0;
+                    document.getElementById('player2-health').textContent = gameState.player2.health;
+                    checkGameOver();
+                    showCombatLog('Dealt 2 damage directly to player 2’s wizard!', 2000);
+                    break;
+                case 'team_power_up':
+                    for (let lane = 1; lane <= 4; lane++) {
+                        const monster = gameState[`player${currentPlayer}`].board[lane].monster;
+                        if (monster) {
+                            monster.attack += 1;
+                            monster.health += 1;
+                            updateMonsterStats(currentPlayer, lane);
+                        }
+                    }
+                    showCombatLog('All your monsters gain +1 attack and +1 health!', 2000);
+                    break;
+                case 'return_enemy_monster':
+                    // New effect for returning enemy monster to hand
+                    const enemyLane = lane === 1 ? 2 : 1;
+                    const enemyMonster = gameState[`player${enemyLane}`].board[lane].monster;
+                    if (enemyMonster) {
+                        // Return monster to enemy hand
+                        gameState[`player${enemyLane}`].hand.push(enemyMonster);
+                        gameState[`player${enemyLane}`].board[lane].monster = null;
+                        
+                        // Update UI
+                        const slot = document.querySelector(`[data-player="${enemyLane}"][data-lane="${lane}"][data-type="monster"]`);
+                        if (slot) {
+                            slot.innerHTML = '';
+                            slot.classList.add('slot-label');
+                            slot.style.border = '2px dashed #666';
+                        }
+                        showCombatLog(`Returned enemy monster to hand!`, 2000);
+                    } else {
+                        showCombatLog(`No enemy monster to return!`, 2000);
+                    }
+                    break;
+            }
+
+            updateSmackButtonStates();
+            hideSmackModal();
+        }
+
+        function hideSmackModal() {
+            document.getElementById('smack-modal').classList.remove('show');
+        }
+
+        function updateSmackButtonStates() {
+            // Update existing smack buttons and animations
+            const cards = document.querySelectorAll('.played-card');
+            cards.forEach(card => {
+                // Remove existing classes first
+                card.classList.remove('has-affordable-smack');
+                
+                const cardId = parseInt(card.dataset.cardId);
+                const monster = Object.values(gameState[`player${currentPlayer}`].board)
+                    .flatMap(lane => [lane.monster])
+                    .find(m => m && m.uniqueId === cardId);
+                
+                if (monster && monster.smack) {
+                    const hasUsed = gameState[`player${currentPlayer}`].usedSmacks.includes(cardId);
+                    const canAfford = gameState[`player${currentPlayer}`].magic >= monster.smack.cost;
+                    const isCurrentPlayer = parseInt(card.closest('[data-player]').dataset.player) === currentPlayer;
+                    
+                    if (!hasUsed && canAfford && isCurrentPlayer) {
+                        card.classList.add('has-affordable-smack');
+                    }
+                }
+            });
+
+            // Show/hide the smack action button
+            const hasAffordableSmacks = Object.values(gameState[`player${currentPlayer}`].board)
+                .some(lane => lane.monster && 
+                    lane.monster.smack && 
+                    !gameState[`player${currentPlayer}`].usedSmacks.includes(lane.monster.uniqueId) &&
+                    gameState[`player${currentPlayer}`].magic >= lane.monster.smack.cost);
+
+            const smackActionBtn = document.querySelector('.field-btn.smack-action');
+            if (smackActionBtn) {
+                smackActionBtn.style.display = hasAffordableSmacks ? 'block' : 'none';
+            }
+        }
+
+        function addCardToBoard(player, lane, cardType, card) {
+            const slot = document.querySelector(`[data-player="${player}"][data-lane="${lane}"][data-type="${cardType}"]`);
+            const monsterStatsDisplay = document.getElementById(`stats-p${player}-l${lane}-monster`);
+            slot.innerHTML = '';
+            slot.classList.remove('slot-label');
+            slot.style.border = 'none';
+            const playedCard = createPlayedCardElement(card);
+            slot.appendChild(playedCard);
+            // Store base stats for monsters
+            if (cardType === 'monster') {
+                if (typeof card.baseAttack === 'undefined') card.baseAttack = card.attack;
+                if (typeof card.baseHealth === 'undefined') card.baseHealth = card.health;
+            }
+            // Place card in board
+            gameState[`player${player}`].board[lane][cardType] = card;
+            // Always recalculate monster stats if monster is present
+            const monster = gameState[`player${player}`].board[lane].monster;
+            const building = gameState[`player${player}`].board[lane].building;
+            if (monster) {
+                // Reset to base
+                monster.attack = monster.baseAttack;
+                monster.health = monster.baseHealth;
+                // Apply building buffs if present
+                if (building && building.type === 'building') {
+                    monster.attack += building.attackBonus || 0;
+                    monster.health += building.healthBonus || 0;
+                }
+                monster.maxHealth = monster.baseHealth + (building && building.type === 'building' ? (building.healthBonus || 0) : 0);
+                if (monsterStatsDisplay) {
+                    monsterStatsDisplay.style.display = 'flex';
+                    monsterStatsDisplay.innerHTML = `
+                        <div class="stats-attack">⚔️${monster.attack}</div>
+                        <div class="stats-health">❤️${monster.health}</div>
+                    `;
+                }
+            } else if (monsterStatsDisplay) {
+                monsterStatsDisplay.style.display = 'none';
+            }
+            updateSmackButtonStates();
+        }
+
+        function setupBoardDrop() {
+            document.querySelectorAll('.card-slot').forEach(slot => {
+                slot.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                });
+                
+                slot.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    
+                    if (!draggedCard) return;
+                    
+                    const player = parseInt(slot.dataset.player);
+                    const lane = parseInt(slot.dataset.lane);
+                    const slotType = slot.dataset.type;
+                    
+                    // Handle spell casting
+                    if (draggedCard.type === 'spell') {
+                        if (player === currentPlayer || gameState[`player${currentPlayer}`].magic < draggedCard.cost) return;
+                        
+                        gameState[`player${currentPlayer}`].magic -= draggedCard.cost;
+                        document.getElementById(`player${currentPlayer}-magic`).textContent = gameState[`player${currentPlayer}`].magic;
+                        
+                        gameState[`player${currentPlayer}`].hand = gameState[`player${currentPlayer}`].hand.filter(c => c.uniqueId !== draggedCard.uniqueId);
+                        
+                        castSpell(draggedCard, player, lane, slotType);
+                        updateHandDisplay();
+                        draggedCard = null;
+                        return;
+                    }
+                    
+                    // Original logic for monsters and buildings
+                    if (player !== currentPlayer || draggedCard.type !== slotType) return;
+                    if (gameState[`player${currentPlayer}`].board[lane][slotType] !== null) return;
+                    if (gameState[`player${currentPlayer}`].magic < draggedCard.cost) return;
+                    
+                    gameState[`player${currentPlayer}`].magic -= draggedCard.cost;
+                    document.getElementById(`player${currentPlayer}-magic`).textContent = gameState[`player${currentPlayer}`].magic;
+                    
+                    gameState[`player${currentPlayer}`].hand = gameState[`player${currentPlayer}`].hand.filter(c => c.uniqueId !== draggedCard.uniqueId);
+                    
+                    addCardToBoard(currentPlayer, lane, slotType, draggedCard);
+                    
+                    // Broadcast card play to other players
+                    broadcastCardPlay(draggedCard, lane, slotType);
+                    
+                    updateHandDisplay();
+                    
+                    draggedCard = null;
+                });
+            });
+        }
+
+        function updateHandDisplay() {
+            for (let player = 1; player <= 2; player++) {
+                const playerHand = gameState[`player${player}`].hand;
+                const handContainer = document.getElementById(`player${player}-hand`);
+                const handCountEl = document.getElementById(`player${player}-hand-count`);
+                const handArea = document.getElementById(`player${player}-hand-area`);
+                
+                if (!handContainer || !handCountEl || !handArea) continue;
+                
+                if (player === currentPlayer) {
+                    handArea.classList.remove('hidden');
+                    handContainer.innerHTML = '';
+                    
+                    playerHand.forEach(card => {
+                        handContainer.appendChild(createCardElement(card, player));
+                    });
+                } else {
+                    handArea.classList.add('hidden');
+                    handContainer.innerHTML = '<div class="hidden-message">Opponent\'s hand is hidden</div>';
+                }
+                
+                handCountEl.textContent = playerHand.length;
+            }
+        }
+
+        function drawCard(player) {
+            // Only draw if there are cards left in the deck
+            if (gameState[`player${player}`].deckSize <= 0 || cardPool.length === 0) return false;
+            // Draw a card from the pool (no duplicates)
+            const newCard = getRandomCard();
+            gameState[`player${player}`].hand.push(newCard);
+            // Deck size is now the number of cards left in the pool
+            gameState[`player${player}`].deckSize = cardPool.length;
+            updateDeckCount();
+            return true;
+        }
+
+        function drawCardFromDeck(player) {
+            if (hasDrawnThisTurn || currentTurn === 1 || player !== currentPlayer) return;
+            
+            const success = drawCard(player);
+            if (success) {
+                hasDrawnThisTurn = true;
+                updateHandDisplay();
+                document.getElementById(`player${player}-deck`).classList.add('disabled');
+            }
+        }
+
+        function updateDeckCount() {
+            document.getElementById('player1-deck-count').textContent = cardPool.length;
+            document.getElementById('player2-deck-count').textContent = cardPool.length;
+        }
+
+        function showDamageNumber(element, damage) {
+            const rect = element.getBoundingClientRect();
+            const damageEl = document.createElement('div');
+            damageEl.className = 'damage-number';
+            damageEl.textContent = `-${damage}`;
+            damageEl.style.left = `${rect.left + rect.width/2}px`;
+            damageEl.style.top = `${rect.top + rect.height/2}px`;
+            document.body.appendChild(damageEl);
+            
+            setTimeout(() => {
+                if (document.body.contains(damageEl)) {
+                    document.body.removeChild(damageEl);
+                }
+            }, 1000);
+        }
+
+        function showCombatLog(message, duration = 2000) {
+            const log = document.getElementById('combat-log');
+            log.innerHTML = message;
+            log.classList.add('show');
+            
+            setTimeout(() => {
+                log.classList.remove('show');
+            }, duration);
+        }
+
+        function checkGameOver() {
+            if (gameState.player1.health <= 0) {
+                alert('Player 2 wins!');
+                window.location.reload();
+                return true;
+            }
+            if (gameState.player2.health <= 0) {
+                alert('Player 1 wins!');
+                window.location.reload();
+                return true;
+            }
+            return false;
+        }
+
+        function performCombat() {
+            if (currentTurn === 1) return;
+            
+            let combatMessages = [];
+            let damageDealt = false;
+            
+            const attackingPlayer = currentPlayer;
+            const defendingPlayer = currentPlayer === 1 ? 2 : 1;
+            
+            for (let lane = 1; lane <= 4; lane++) {
+                const attackingMonster = gameState[`player${attackingPlayer}`].board[lane].monster;
+                
+                if (attackingMonster) {
+                    const defendingMonster = gameState[`player${defendingPlayer}`].board[lane].monster;
+                    const damage = attackingMonster.attack;
+                    
+                    if (defendingMonster) {
+                        defendingMonster.health -= damage;
+                        combatMessages.push(`${attackingMonster.name} deals ${damage} damage to ${defendingMonster.name}!`);
+                        
+                        const defendingSlot = document.querySelector(`[data-player="${defendingPlayer}"][data-lane="${lane}"][data-type="monster"]`);
+                        if (defendingSlot) {
+                            showDamageNumber(defendingSlot, damage);
+                        }
+                        
+                        if (defendingMonster.health <= 0) {
+                            combatMessages.push(`${defendingMonster.name} is destroyed!`);
+                            
+                            gameState[`player${defendingPlayer}`].board[lane].monster = null;
+                            const slot = document.querySelector(`[data-player="${defendingPlayer}"][data-lane="${lane}"][data-type="monster"]`);
+                            const statsDisplay = document.getElementById(`stats-p${defendingPlayer}-l${lane}-monster`);
+                            
+                            if (slot) {
+                                slot.innerHTML = '';
+                                slot.classList.add('slot-label');
+                                slot.style.border = '2px dashed #666'; // Restore the dotted border when monster is destroyed
+                            }
+                            if (statsDisplay) {
+                                statsDisplay.style.display = 'none';
+                            }
+                        } else {
+                            updateMonsterStats(defendingPlayer, lane);
+                        }
+                        
+                        damageDealt = true;
+                    } else {
+                        gameState[`player${defendingPlayer}`].health -= damage;
+                        combatMessages.push(`${attackingMonster.name} attacks Player ${defendingPlayer} directly for ${damage} damage!`);
+                        
+                        const playerInfo = document.querySelector(`.player${defendingPlayer}-info`);
+                        if (playerInfo) {
+                            showDamageNumber(playerInfo, damage);
+                        }
+                        
+                        document.getElementById(`player${defendingPlayer}-health`).textContent = gameState[`player${defendingPlayer}`].health;
+                        checkGameOver();
+                        
+                        damageDealt = true;
+                        
+                        if (gameState[`player${defendingPlayer}`].health <= 0) {
+                            combatMessages.push(`Player ${defendingPlayer} is defeated! Player ${attackingPlayer} wins!`);
+                            showCombatLog(combatMessages.join('<br>'), 5000);
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            if (damageDealt && combatMessages.length > 0) {
+                showCombatLog(combatMessages.join('<br>'));
+            }
+        }
+
+        function updateButtonStates() {
+            const rollDiceBtn = document.getElementById('roll-dice');
+            const endTurnBtns = document.querySelectorAll('[id*="end-turn"]');
+            
+            // Check if player has rolled dice this turn
+            const hasMagic = gameState[`player${currentPlayer}`].magic > 0;
+            
+            rollDiceBtn.disabled = hasMagic;
+            // Always keep ALL end turn buttons enabled
+            endTurnBtns.forEach(btn => {
+                btn.disabled = false;
+            });
+        }
+
+        function rollDice() {
+            const roll = Math.floor(Math.random() * 6) + 1;
+            const bonus = gameState[`player${currentPlayer}`].nextTurnMagicBonus;
+            const totalMagic = roll + bonus;
+            
+            gameState[`player${currentPlayer}`].magic = totalMagic;
+            gameState[`player${currentPlayer}`].nextTurnMagicBonus = 0;
+            
+            document.getElementById(`player${currentPlayer}-magic`).textContent = totalMagic;
+            
+            let displayText = `Player ${currentPlayer}'s Turn - Turn ${currentTurn} | Rolled: ${roll}`;
+            if (bonus > 0) {
+                displayText += ` + ${bonus} bonus = ${totalMagic} Magic`;
+            } else {
+                displayText += ` Magic`;
+            }
+            
+            document.getElementById('turn-display').textContent = displayText;
+            updateButtonStates();
+            updateSmackButtonStates();
+        }
+
+        function endTurn() {
+            performCombat();
+            
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            
+            if (currentPlayer === 1) {
+                currentTurn++;
+            }
+            
+            const prevPlayer = currentPlayer === 1 ? 2 : 1;
+            gameState[`player${prevPlayer}`].magic = 0;
+            document.getElementById(`player${prevPlayer}-magic`).textContent = 0;
+            
+            gameState[`player${currentPlayer}`].usedSmacks = [];
+            hasDrawnThisTurn = false;
+            
+            document.getElementById('turn-display').textContent = `Player ${currentPlayer}'s Turn - Turn ${currentTurn}`;
+            
+            updateHandDisplay();
+            updateSmackButtonStates();
+            updateButtonStates();
+        }
+
+        function showSmackOptions() {
+            const availableSmacks = [];
+            
+            // Gather all available smacks
+            Object.entries(gameState[`player${currentPlayer}`].board).forEach(([lane, slots]) => {
+                if (slots.monster && 
+                    slots.monster.smack && 
+                    !gameState[`player${currentPlayer}`].usedSmacks.includes(slots.monster.uniqueId) &&
+                    gameState[`player${currentPlayer}`].magic >= slots.monster.smack.cost) {
+                    availableSmacks.push({
+                        lane: parseInt(lane),
+                        monster: slots.monster
+                    });
+                }
+            });
+
+            if (availableSmacks.length === 1) {
+                // If only one option, show its modal directly
+                showSmackModal(currentPlayer, availableSmacks[0].lane, availableSmacks[0].monster);
+            } else {
+                // Could implement a selection menu for multiple options
+                showCombatLog('Click on a monster to use its Smack ability', 2000);
+            }
+        }
+
+        function castSpell(spell, targetPlayer, targetLane, targetType) {
+            switch (spell.spellEffect) {
+                case 'return_enemy_monster':
+                    const targetMonster = gameState[`player${targetPlayer}`].board[targetLane].monster;
+                    if (targetMonster) {
+                        // Return monster to opponent's hand
+                        gameState[`player${targetPlayer}`].hand.push(targetMonster);
+                        gameState[`player${targetPlayer}`].board[targetLane].monster = null;
+                        
+                        // Clear the slot visually
+                        const slot = document.querySelector(`[data-player="${targetPlayer}"][data-lane="${targetLane}"][data-type="monster"]`);
+                        const statsDisplay = document.getElementById(`stats-p${targetPlayer}-l${targetLane}-monster`);
+                        if (slot) {
+                            slot.innerHTML = '';
+                            slot.classList.add('slot-label');
+                            slot.style.border = '2px dashed #666';
+                        }
+                        if (statsDisplay) {
+                            statsDisplay.style.display = 'none';
+                        }
+                        
+                        showCombatLog(`${targetMonster.name} returned to hand!`, 2000);
+                        return true;
+                    }
+                    break;
+            }
+            return false;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('player1-deck').addEventListener('click', () => drawCardFromDeck(1));
+            document.getElementById('player2-deck').addEventListener('click', () => drawCardFromDeck(2));
+            document.getElementById('cancel-smack-btn').addEventListener('click', hideSmackModal);
+            
+            for (let i = 0; i < 5; i++) {
+                drawCard(1);
+                drawCard(2);
+            }
+            
+            setupBoardDrop();
+            updateHandDisplay();
+            updateDeckCount();
+            updateButtonStates();
+        });
+    </script>
+</body>
+</html>
