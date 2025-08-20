@@ -1054,12 +1054,7 @@
             // Update game state if provided
             if (data.gameState) {
                 gameState = data.gameState;
-                
-                // Update UI displays with new game state
-                document.getElementById('player1-health').textContent = gameState.player1.health;
-                document.getElementById('player2-health').textContent = gameState.player2.health;
-                document.getElementById('player1-magic').textContent = gameState.player1.magic;
-                document.getElementById('player2-magic').textContent = gameState.player2.magic;
+                updateStatsDisplay();
             }
             
             // Reset turn-specific states
@@ -1102,6 +1097,7 @@
             updateButtonStates();
             updateSmackButtonStates();
             updateTurnDisplay();
+            updateStatsDisplay();
         }
 
         // Function to update turn display
@@ -1122,6 +1118,29 @@
             } else {
                 myInfo.textContent = 'You (Player 2)';  
                 opponentInfo.textContent = 'Opponent (Player 1)';
+            }
+        }
+
+        // Function to update stats display based on actual player assignment  
+        function updateStatsDisplay() {
+            if (myPlayerNumber === 1) {
+                // I am player 1 - show my stats in bottom (player1 UI), opponent in top (player2 UI)
+                document.getElementById('player1-health').textContent = gameState.player1.health;
+                document.getElementById('player1-magic').textContent = gameState.player1.magic;
+                document.getElementById('player1-hand-display').textContent = gameState.player1.hand.length;
+                
+                document.getElementById('player2-health').textContent = gameState.player2.health;
+                document.getElementById('player2-magic').textContent = gameState.player2.magic;
+                document.getElementById('player2-hand-display').textContent = gameState.player2.hand.length;
+            } else {
+                // I am player 2 - show my stats in bottom (player1 UI), opponent in top (player2 UI)  
+                document.getElementById('player1-health').textContent = gameState.player2.health;
+                document.getElementById('player1-magic').textContent = gameState.player2.magic;
+                document.getElementById('player1-hand-display').textContent = gameState.player2.hand.length;
+                
+                document.getElementById('player2-health').textContent = gameState.player1.health;
+                document.getElementById('player2-magic').textContent = gameState.player1.magic;
+                document.getElementById('player2-hand-display').textContent = gameState.player1.hand.length;
             }
         }
 
@@ -1537,15 +1556,16 @@
                             slot.classList.add('invalid-drop-target');
                         }
                     } else {
-                        // Original logic for monsters and buildings
-                        const canPlace = player === currentPlayer && 
+                        // Original logic for monsters and buildings - can only place on my UI side
+                        const myUISide = myPlayerNumber === 1 ? 1 : 2;
+                        const canPlace = player === myUISide && 
                                        draggedCard.type === slotType && 
-                                       gameState[`player${currentPlayer}`].board[lane][slotType] === null &&
-                                       gameState[`player${currentPlayer}`].magic >= draggedCard.cost;
+                                       gameState[`player${myPlayerNumber}`].board[lane][slotType] === null &&
+                                       gameState[`player${myPlayerNumber}`].magic >= draggedCard.cost;
                         
                         if (canPlace) {
                             slot.classList.add('valid-drop-target');
-                        } else if (player === currentPlayer && draggedCard.type === slotType) {
+                        } else if (player === myUISide && draggedCard.type === slotType) {
                             slot.classList.add('invalid-drop-target');
                         }
                     }
@@ -1872,14 +1892,16 @@
                         return;
                     }
                     
-                    // Original logic for monsters and buildings
-                    if (player !== myPlayerNumber || draggedCard.type !== slotType) return;
+                    // Original logic for monsters and buildings - place on my side only
+                    const myUISide = myPlayerNumber === 1 ? 1 : 2; // Player 1 uses bottom UI (data-player="1"), Player 2 uses top UI (data-player="2")
+                    
+                    if (player !== myUISide || draggedCard.type !== slotType) return;
                     if (gameState[`player${myPlayerNumber}`].board[lane][slotType] !== null) return;
                     if (gameState[`player${myPlayerNumber}`].magic < draggedCard.cost) return;
                     if (currentPlayer !== myPlayerNumber) return; // Only play on your turn
                     
                     gameState[`player${myPlayerNumber}`].magic -= draggedCard.cost;
-                    document.getElementById(`player${myPlayerNumber}-magic`).textContent = gameState[`player${myPlayerNumber}`].magic;
+                    updateStatsDisplay();
                     
                     gameState[`player${myPlayerNumber}`].hand = gameState[`player${myPlayerNumber}`].hand.filter(c => c.uniqueId !== draggedCard.uniqueId);
                     
@@ -2129,7 +2151,7 @@
             gameState[`player${currentPlayer}`].magic = totalMagic;
             gameState[`player${currentPlayer}`].nextTurnMagicBonus = 0;
             
-            document.getElementById(`player${currentPlayer}-magic`).textContent = totalMagic;
+            updateStatsDisplay();
             
             const isMyTurn = currentPlayer === myPlayerNumber;
             let displayText = isMyTurn ? `Your Turn - Turn ${currentTurn} | Rolled: ${roll}` : `Opponent's Turn - Turn ${currentTurn}`;

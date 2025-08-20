@@ -288,7 +288,7 @@ function initializeGame() {
             health: 25,
             magic: 0,
             hand: [],
-            deckSize: 30,
+            deckSize: 19, // Will be updated after dealing cards
             usedSmacks: [],
             nextTurnMagicBonus: 0,
             board: {
@@ -302,7 +302,7 @@ function initializeGame() {
             health: 25,
             magic: 0,
             hand: [],
-            deckSize: 30,
+            deckSize: 19, // Will be updated after dealing cards
             usedSmacks: [],
             nextTurnMagicBonus: 0,
             board: {
