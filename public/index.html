@@ -1496,9 +1496,9 @@
             
             if (card.type === 'monster' && card.smack) {
                 cardEl.addEventListener('click', function(e) {
-                    const player = parseInt(this.closest('[data-player]').dataset.player);
+                    const uiPlayer = parseInt(this.closest('[data-player]').dataset.player);
                     const lane = parseInt(this.closest('[data-lane]').dataset.lane);
-                    showSmackModal(player, lane, card);
+                    showSmackModal(uiPlayer, lane, card);
                 });
             }
             
@@ -1601,9 +1601,20 @@
             }
         }
 
-        function showSmackModal(player, lane, card) {
-            // Return early if it's not current player's card or ability was used
-            if (player !== currentPlayer) return;
+        function showSmackModal(uiPlayer, lane, card) {
+            // Convert UI player to actual game player number
+            // Bottom row (uiPlayer = 1) = my cards regardless of my player number
+            // Top row (uiPlayer = 2) = opponent's cards regardless of my player number
+            let actualPlayer;
+            if (uiPlayer === 1) {
+                actualPlayer = myPlayerNumber; // Bottom row is always my cards
+            } else {
+                actualPlayer = myPlayerNumber === 1 ? 2 : 1; // Top row is always opponent's cards
+            }
+            
+            // Only allow using smacks on current player's turn and if it's their card
+            if (actualPlayer !== currentPlayer || currentPlayer !== myPlayerNumber) return;
+            
             if (gameState[`player${currentPlayer}`].usedSmacks.includes(card.uniqueId)) {
                 showCombatLog('This monster has already used its Smack ability this turn!', 1500);
                 return;
@@ -1626,7 +1637,7 @@
             description.textContent = card.smack.description;
             
             useBtn.disabled = !canAfford;
-            useBtn.onclick = () => useSmackAbility(player, lane, card);
+            useBtn.onclick = () => useSmackAbility(actualPlayer, lane, card);
 
             modal.classList.add('show');
         }
@@ -1807,9 +1818,12 @@
                 if (monster && monster.smack) {
                     const hasUsed = gameState[`player${currentPlayer}`].usedSmacks.includes(cardId);
                     const canAfford = gameState[`player${currentPlayer}`].magic >= monster.smack.cost;
-                    const isCurrentPlayer = parseInt(card.closest('[data-player]').dataset.player) === currentPlayer;
                     
-                    if (!hasUsed && canAfford && isCurrentPlayer) {
+                    // Check if this card is on my side of the board (bottom row = data-player="1")
+                    const uiPlayer = parseInt(card.closest('[data-player]').dataset.player);
+                    const isMyCard = uiPlayer === 1; // Bottom row is always my cards
+                    
+                    if (!hasUsed && canAfford && isMyCard && currentPlayer === myPlayerNumber) {
                         card.classList.add('has-affordable-smack');
                     }
                 }
@@ -1824,7 +1838,7 @@
 
             const smackActionBtn = document.querySelector('.field-btn.smack-action');
             if (smackActionBtn) {
-                smackActionBtn.style.display = hasAffordableSmacks ? 'block' : 'none';
+                smackActionBtn.style.display = hasAffordableSmacks && currentPlayer === myPlayerNumber ? 'block' : 'none';
             }
         }
 
