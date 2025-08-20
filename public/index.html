@@ -1546,10 +1546,10 @@
                     const lane = parseInt(slot.dataset.lane);
                     const slotType = slot.dataset.type;
                     
-                    // Handle spell cards - they can target enemy board row
+                    // Handle spell cards - they can target enemy board row (top row from my perspective)
                     if (draggedCard.type === 'spell') {
-                        const enemyPlayer = currentPlayer === 1 ? 2 : 1;
-                        const canCast = player === enemyPlayer && 
+                        const opponentUIRow = 2; // Opponent always appears on top row
+                        const canCast = player === opponentUIRow && 
                                        gameState[`player${currentPlayer}`].magic >= draggedCard.cost;
                         if (canCast) {
                             slot.classList.add('valid-drop-target');
@@ -1557,16 +1557,16 @@
                             slot.classList.add('invalid-drop-target');
                         }
                     } else {
-                        // Original logic for monsters and buildings - can only place on correct row
-                        const myBoardRow = myPlayerNumber; // Player 1 = bottom row (1), Player 2 = top row (2)
-                        const canPlace = player === myBoardRow && 
+                        // Original logic for monsters and buildings - can only place on my bottom row
+                        const myUIRow = 1; // I always place on bottom row (data-player="1")
+                        const canPlace = player === myUIRow && 
                                        draggedCard.type === slotType && 
                                        gameState[`player${myPlayerNumber}`].board[lane][slotType] === null &&
                                        gameState[`player${myPlayerNumber}`].magic >= draggedCard.cost;
                         
                         if (canPlace) {
                             slot.classList.add('valid-drop-target');
-                        } else if (player === myBoardRow && draggedCard.type === slotType) {
+                        } else if (player === myUIRow && draggedCard.type === slotType) {
                             slot.classList.add('invalid-drop-target');
                         }
                     }
@@ -1586,8 +1586,8 @@
         function updateMonsterStats(player, lane) {
             const monster = gameState[`player${player}`].board[lane].monster;
             if (monster) {
-                // Use board row (player number) for display
-                const boardRow = player;
+                // Use perspective-based board row for display
+                const boardRow = player === myPlayerNumber ? 1 : 2;
                 const statsDisplay = document.getElementById(`stats-p${boardRow}-l${lane}-monster`);
                 if (statsDisplay) {
                     statsDisplay.innerHTML = `
@@ -1686,7 +1686,7 @@
                             hitCount++;
                             if (enemyMonster.health <= 0) {
                                 gameState[`player${enemyPlayer}`].board[lane].monster = null;
-                                const boardRow = enemyPlayer;
+                                const boardRow = enemyPlayer === myPlayerNumber ? 1 : 2;
                                 const slot = document.querySelector(`[data-player="${boardRow}"][data-lane="${lane}"][data-type="monster"]`);
                                 const statsDisplay = document.getElementById(`stats-p${boardRow}-l${lane}-monster`);
                                 if (slot) {
@@ -1826,8 +1826,14 @@
         }
 
         function addCardToBoard(player, lane, cardType, card) {
-            // Player 1 always goes to bottom row (data-player="1"), Player 2 to top row (data-player="2")
-            const boardRow = player; 
+            // From my perspective: I place on bottom row (1), opponent places on top row (2)
+            let boardRow;
+            if (player === myPlayerNumber) {
+                boardRow = 1; // My cards go on bottom row
+            } else {
+                boardRow = 2; // Opponent's cards go on top row
+            }
+            
             const slot = document.querySelector(`[data-player="${boardRow}"][data-lane="${lane}"][data-type="${cardType}"]`);
             const monsterStatsDisplay = document.getElementById(`stats-p${boardRow}-l${lane}-monster`);
             
@@ -1890,7 +1896,8 @@
                     // Handle spell casting - target enemy player's board row
                     if (draggedCard.type === 'spell') {
                         const enemyPlayer = currentPlayer === 1 ? 2 : 1;
-                        if (player !== enemyPlayer || gameState[`player${currentPlayer}`].magic < draggedCard.cost) return;
+                        const opponentUIRow = 2; // Opponent cards are always on top row (data-player="2")
+                        if (player !== opponentUIRow || gameState[`player${currentPlayer}`].magic < draggedCard.cost) return;
                         
                         gameState[`player${currentPlayer}`].magic -= draggedCard.cost;
                         updateStatsDisplay();
@@ -1903,10 +1910,10 @@
                         return;
                     }
                     
-                    // Original logic for monsters and buildings - place on correct row based on player number
-                    const myBoardRow = myPlayerNumber; // Player 1 uses row 1 (bottom), Player 2 uses row 2 (top)
+                    // Place on my perspective's bottom row (data-player="1" is always my bottom row)
+                    const myUIRow = 1; // I always place cards on the bottom row (data-player="1")
                     
-                    if (player !== myBoardRow || draggedCard.type !== slotType) return;
+                    if (player !== myUIRow || draggedCard.type !== slotType) return;
                     if (gameState[`player${myPlayerNumber}`].board[lane][slotType] !== null) return;
                     if (gameState[`player${myPlayerNumber}`].magic < draggedCard.cost) return;
                     if (currentPlayer !== myPlayerNumber) return; // Only play on your turn
@@ -2061,8 +2068,8 @@
                             combatMessages.push(`${defendingMonster.name} is destroyed!`);
                             
                             gameState[`player${defendingPlayer}`].board[lane].monster = null;
-                            // Use defendingPlayer as board row for visual updates
-                            const boardRow = defendingPlayer;
+                            // Use perspective-based board row for visual updates
+                            const boardRow = defendingPlayer === myPlayerNumber ? 1 : 2;
                             const slot = document.querySelector(`[data-player="${boardRow}"][data-lane="${lane}"][data-type="monster"]`);
                             const statsDisplay = document.getElementById(`stats-p${boardRow}-l${lane}-monster`);
                             
@@ -2247,8 +2254,8 @@
                         gameState[`player${targetPlayer}`].hand.push(targetMonster);
                         gameState[`player${targetPlayer}`].board[targetLane].monster = null;
                         
-                        // Clear the slot visually using correct board row
-                        const boardRow = targetPlayer;
+                        // Clear the slot visually using perspective-based board row
+                        const boardRow = targetPlayer === myPlayerNumber ? 1 : 2;
                         const slot = document.querySelector(`[data-player="${boardRow}"][data-lane="${targetLane}"][data-type="monster"]`);
                         const statsDisplay = document.getElementById(`stats-p${boardRow}-l${targetLane}-monster`);
                         if (slot) {
