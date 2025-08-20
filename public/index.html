@@ -915,7 +915,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         // Socket.IO multiplayer integration
-        const socket = io();
+        const socket = io('http://localhost:3001'); // Explicitly specify the server URL
         let socketConnected = false;
         let playerReady = false;
         let playersReadyList = {};
@@ -926,6 +926,18 @@
             socketConnected = true;
             document.getElementById('connection-status').textContent = '🟢 Connected';
             document.getElementById('ready-btn').disabled = false;
+        });
+
+        // Handle connection errors
+        socket.on("connect_error", (error) => {
+            console.error("Connection error:", error);
+            document.getElementById('connection-status').textContent = '🔴 Connection Error';
+            document.getElementById('ready-btn').disabled = true;
+        });
+
+        // Debug: Log all socket events
+        socket.onAny((eventName, ...args) => {
+            console.log('Socket event:', eventName, args);
         });
 
         // Handle disconnection
