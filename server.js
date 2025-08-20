@@ -336,6 +336,14 @@ app.use(express.static("public"));
 io.on("connection", (socket) => {
   console.log("A player connected:", socket.id);
   
+  // Check if game is full (max 2 players)
+  if (Object.keys(playersReady).length >= 2 && !playersReady[socket.id]) {
+    console.log("Game is full, disconnecting player:", socket.id);
+    socket.emit("gameFull");
+    socket.disconnect();
+    return;
+  }
+  
   // Initialize player as not ready
   playersReady[socket.id] = false;
   
@@ -359,15 +367,15 @@ io.on("connection", (socket) => {
     io.emit("playerReady", { playerId: socket.id, ready: data.ready });
     io.emit("allPlayersReady", playersReady);
     
-    // Check if we should start the game
+    // Check if we should start the game (only allow exactly 2 players)
     const readyPlayers = Object.values(playersReady).filter(ready => ready);
     const totalPlayers = Object.keys(playersReady).length;
     
-    if (readyPlayers.length >= 2 && totalPlayers >= 2 && !gameStarted) {
+    if (readyPlayers.length === 2 && totalPlayers === 2 && !gameStarted) {
       gameStarted = true;
       initializeGame();
       io.emit("gameStarted", sharedGameState);
-      console.log("Game started!");
+      console.log("Game started with 2 players!");
     }
   });
 

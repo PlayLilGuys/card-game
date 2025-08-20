@@ -997,9 +997,11 @@
             myPlayerNumber = myIndex + 1; // 1 or 2
             
             console.log(`I am player ${myPlayerNumber}`);
+            console.log(`Current turn player: ${currentPlayer}`);
             
             // Update displays
             updateAllDisplays();
+            updatePlayerLabels();
             showCombatLog("Game Started! All players ready.", 3000);
         });
 
@@ -1074,7 +1076,23 @@
 
         // Function to update turn display
         function updateTurnDisplay() {
-            document.getElementById('turn-display').textContent = `Player ${currentPlayer}'s Turn - Turn ${currentTurn}`;
+            const isMyTurn = currentPlayer === myPlayerNumber;
+            const turnText = isMyTurn ? `Your Turn - Turn ${currentTurn}` : `Opponent's Turn - Turn ${currentTurn}`;
+            document.getElementById('turn-display').textContent = turnText;
+        }
+
+        // Function to update player labels based on my perspective
+        function updatePlayerLabels() {
+            const myInfo = document.querySelector('.player1-info div');
+            const opponentInfo = document.querySelector('.player2-info div');
+            
+            if (myPlayerNumber === 1) {
+                myInfo.textContent = 'You (Player 1)';
+                opponentInfo.textContent = 'Opponent (Player 2)';
+            } else {
+                myInfo.textContent = 'You (Player 2)';  
+                opponentInfo.textContent = 'Opponent (Player 1)';
+            }
         }
 
         let currentPlayer = 1;
@@ -1821,16 +1839,17 @@
                     }
                     
                     // Original logic for monsters and buildings
-                    if (player !== currentPlayer || draggedCard.type !== slotType) return;
-                    if (gameState[`player${currentPlayer}`].board[lane][slotType] !== null) return;
-                    if (gameState[`player${currentPlayer}`].magic < draggedCard.cost) return;
+                    if (player !== myPlayerNumber || draggedCard.type !== slotType) return;
+                    if (gameState[`player${myPlayerNumber}`].board[lane][slotType] !== null) return;
+                    if (gameState[`player${myPlayerNumber}`].magic < draggedCard.cost) return;
+                    if (currentPlayer !== myPlayerNumber) return; // Only play on your turn
                     
-                    gameState[`player${currentPlayer}`].magic -= draggedCard.cost;
-                    document.getElementById(`player${currentPlayer}-magic`).textContent = gameState[`player${currentPlayer}`].magic;
+                    gameState[`player${myPlayerNumber}`].magic -= draggedCard.cost;
+                    document.getElementById(`player${myPlayerNumber}-magic`).textContent = gameState[`player${myPlayerNumber}`].magic;
                     
-                    gameState[`player${currentPlayer}`].hand = gameState[`player${currentPlayer}`].hand.filter(c => c.uniqueId !== draggedCard.uniqueId);
+                    gameState[`player${myPlayerNumber}`].hand = gameState[`player${myPlayerNumber}`].hand.filter(c => c.uniqueId !== draggedCard.uniqueId);
                     
-                    addCardToBoard(currentPlayer, lane, slotType, draggedCard);
+                    addCardToBoard(myPlayerNumber, lane, slotType, draggedCard);
                     
                     // Broadcast card play to other players
                     broadcastCardPlay(draggedCard, lane, slotType);
@@ -2024,13 +2043,14 @@
             const endTurnBtns = document.querySelectorAll('[id*="end-turn"]');
             const myDecks = document.querySelectorAll('#my-deck, #my-deck-right');
             
-            // Check if player has rolled dice this turn
+            const isMyTurn = currentPlayer === myPlayerNumber;
             const hasMagic = gameState[`player${currentPlayer}`].magic > 0;
             
-            rollDiceBtn.disabled = hasMagic;
+            // Only enable buttons on your turn
+            rollDiceBtn.disabled = !isMyTurn || hasMagic;
             
             // Enable/disable deck based on turn and draw status
-            const canDraw = currentPlayer === myPlayerNumber && !hasDrawnThisTurn && currentTurn > 1;
+            const canDraw = isMyTurn && !hasDrawnThisTurn && currentTurn > 1;
             myDecks.forEach(deck => {
                 if (canDraw) {
                     deck.classList.remove('disabled');
@@ -2039,13 +2059,19 @@
                 }
             });
             
-            // Always keep ALL end turn buttons enabled
+            // Only enable end turn buttons on your turn
             endTurnBtns.forEach(btn => {
-                btn.disabled = false;
+                btn.disabled = !isMyTurn;
             });
         }
 
         function rollDice() {
+            // Only allow rolling on your turn
+            if (currentPlayer !== myPlayerNumber) {
+                showCombatLog("It's not your turn!", 1500);
+                return;
+            }
+            
             const roll = Math.floor(Math.random() * 6) + 1;
             const bonus = gameState[`player${currentPlayer}`].nextTurnMagicBonus;
             const totalMagic = roll + bonus;
@@ -2055,10 +2081,11 @@
             
             document.getElementById(`player${currentPlayer}-magic`).textContent = totalMagic;
             
-            let displayText = `Player ${currentPlayer}'s Turn - Turn ${currentTurn} | Rolled: ${roll}`;
+            const isMyTurn = currentPlayer === myPlayerNumber;
+            let displayText = isMyTurn ? `Your Turn - Turn ${currentTurn} | Rolled: ${roll}` : `Opponent's Turn - Turn ${currentTurn}`;
             if (bonus > 0) {
                 displayText += ` + ${bonus} bonus = ${totalMagic} Magic`;
-            } else {
+            } else if (currentPlayer === myPlayerNumber) {
                 displayText += ` Magic`;
             }
             
@@ -2077,6 +2104,12 @@
         }
 
         function endTurn() {
+            // Only allow ending turn on your turn
+            if (currentPlayer !== myPlayerNumber) {
+                showCombatLog("It's not your turn!", 1500);
+                return;
+            }
+            
             performCombat();
             
             currentPlayer = currentPlayer === 1 ? 2 : 1;
@@ -2092,7 +2125,7 @@
             gameState[`player${currentPlayer}`].usedSmacks = [];
             hasDrawnThisTurn = false;
             
-            document.getElementById('turn-display').textContent = `Player ${currentPlayer}'s Turn - Turn ${currentTurn}`;
+            updateTurnDisplay();
             
             updateHandDisplay();
             updateSmackButtonStates();
