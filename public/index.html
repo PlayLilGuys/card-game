@@ -1172,6 +1172,7 @@
                 hand: [],
                 deckSize: 30,
                 usedSmacks: [],
+                usedBuildings: [],
                 nextTurnMagicBonus: 0,
                 board: {
                     1: { monster: null, building: null },
@@ -1186,6 +1187,7 @@
                 hand: [],
                 deckSize: 30,
                 usedSmacks: [],
+                usedBuildings: [],
                 nextTurnMagicBonus: 0,
                 board: {
                     1: { monster: null, building: null },
@@ -1443,6 +1445,28 @@
                 image: 'https://playlilguys.com/wp-content/uploads/2025/07/BB-5.webp'
             },
             {
+                id: 'BB-7',
+                type: 'building',
+                name: 'Healing Shrine',
+                cost: 1,
+                effect: 'Heals your wizard for 5 when a monster in this lane dies',
+                attackBonus: 0,
+                healthBonus: 0,
+                onMonsterDeath: 'heal_wizard_5',
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/BB-7.webp'
+            },
+            {
+                id: 'BB-8',
+                type: 'building',
+                name: 'Damage Tower',
+                cost: 1,
+                effect: 'Deal 2 damage to any enemy monster once per turn',
+                attackBonus: 0,
+                healthBonus: 0,
+                activeAbility: 'damage_tower',
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/BB-8.webp'
+            },
+            {
                 id: 'SS-2',
                 type: 'spell',
                 name: 'Return Spell',
@@ -1450,6 +1474,24 @@
                 effect: 'Move enemy monster back to their hand',
                 spellEffect: 'return_enemy_monster',
                 image: 'https://playlilguys.com/wp-content/uploads/2025/07/SS-2.webp'
+            },
+            {
+                id: 'SS-5',
+                type: 'spell',
+                name: 'Destroy Spell',
+                cost: 1,
+                effect: 'Destroy target enemy monster',
+                spellEffect: 'destroy_enemy_monster',
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/SS-5.webp'
+            },
+            {
+                id: 'SS-7',
+                type: 'spell',
+                name: 'Hand Burst',
+                cost: 1,
+                effect: 'Deal 1 damage to enemy wizard per card in your hand',
+                spellEffect: 'hand_burst_damage',
+                image: 'https://playlilguys.com/wp-content/uploads/2025/07/SS-7.webp'
             }
         ];
 
@@ -1509,6 +1551,12 @@
                     const uiPlayer = parseInt(this.closest('[data-player]').dataset.player);
                     const lane = parseInt(this.closest('[data-lane]').dataset.lane);
                     showSmackModal(uiPlayer, lane, card);
+                });
+            } else if (card.type === 'building' && card.activeAbility) {
+                cardEl.addEventListener('click', function(e) {
+                    const uiPlayer = parseInt(this.closest('[data-player]').dataset.player);
+                    const lane = parseInt(this.closest('[data-lane]').dataset.lane);
+                    showBuildingModal(uiPlayer, lane, card);
                 });
             }
             
@@ -1781,6 +1829,16 @@
                             enemyMonster.health -= 2;
                             hitCount++;
                             if (enemyMonster.health <= 0) {
+                                // Check for Healing Shrine effect before removing monster
+                                const enemyBuilding = gameState[`player${enemyPlayer}`].board[lane].building;
+                                if (enemyBuilding && enemyBuilding.onMonsterDeath === 'heal_wizard_5') {
+                                    gameState[`player${enemyPlayer}`].health += 5;
+                                    if (gameState[`player${enemyPlayer}`].health > 25) {
+                                        gameState[`player${enemyPlayer}`].health = 25;
+                                    }
+                                    showCombatLog(`Healing Shrine heals enemy wizard for 5!`, 1000);
+                                }
+                                
                                 gameState[`player${enemyPlayer}`].board[lane].monster = null;
                                 const boardRow = enemyPlayer === myPlayerNumber ? 1 : 2;
                                 const slot = document.querySelector(`[data-player="${boardRow}"][data-lane="${lane}"][data-type="monster"]`);
@@ -1885,6 +1943,118 @@
             document.getElementById('smack-modal').classList.remove('show');
         }
 
+        function showBuildingModal(uiPlayer, lane, card) {
+            // Convert UI player to actual game player number
+            let actualPlayer;
+            if (uiPlayer === 1) {
+                actualPlayer = myPlayerNumber; // Bottom row is always my cards
+            } else {
+                actualPlayer = myPlayerNumber === 1 ? 2 : 1; // Top row is always opponent's cards
+            }
+            
+            // Only allow using building abilities on current player's turn and if it's their building
+            if (actualPlayer !== currentPlayer || currentPlayer !== myPlayerNumber) return;
+            
+            if (gameState[`player${currentPlayer}`].usedBuildings.includes(card.uniqueId)) {
+                showCombatLog('This building has already been used this turn!', 1500);
+                return;
+            }
+
+            const modal = document.getElementById('smack-modal');
+            const title = document.getElementById('smack-title');
+            const cost = document.getElementById('smack-cost');
+            const description = document.getElementById('smack-description');
+            const useBtn = document.getElementById('use-smack-btn');
+
+            title.textContent = card.name + ' Ability';
+            cost.textContent = '0'; // Building abilities are free
+            description.textContent = card.effect;
+            
+            useBtn.disabled = false;
+            useBtn.onclick = () => useBuildingAbility(actualPlayer, lane, card);
+
+            modal.classList.add('show');
+        }
+
+        function useBuildingAbility(player, lane, card) {
+            gameState[`player${currentPlayer}`].usedBuildings.push(card.uniqueId);
+
+            switch (card.activeAbility) {
+                case 'damage_tower':
+                    // Show selection UI for targeting enemy monsters
+                    showCombatLog('Click on an enemy monster to deal 2 damage to it!', 3000);
+                    
+                    // Add click listeners to enemy monsters
+                    const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+                    const opponentUIRow = 2; // Opponent always appears on top row
+                    
+                    for (let targetLane = 1; targetLane <= 4; targetLane++) {
+                        const enemyMonster = gameState[`player${enemyPlayer}`].board[targetLane].monster;
+                        if (enemyMonster) {
+                            const slot = document.querySelector(`[data-player="${opponentUIRow}"][data-lane="${targetLane}"][data-type="monster"]`);
+                            if (slot) {
+                                slot.style.cursor = 'crosshair';
+                                slot.style.border = '3px solid red';
+                                const clickHandler = () => {
+                                    // Deal 2 damage to the clicked monster
+                                    enemyMonster.health -= 2;
+                                    
+                                    if (enemyMonster.health <= 0) {
+                                        // Check for Healing Shrine effect before removing monster
+                                        const enemyBuilding = gameState[`player${enemyPlayer}`].board[targetLane].building;
+                                        if (enemyBuilding && enemyBuilding.onMonsterDeath === 'heal_wizard_5') {
+                                            gameState[`player${enemyPlayer}`].health += 5;
+                                            if (gameState[`player${enemyPlayer}`].health > 25) {
+                                                gameState[`player${enemyPlayer}`].health = 25;
+                                            }
+                                            showCombatLog(`Healing Shrine heals enemy wizard for 5!`, 1000);
+                                        }
+                                        
+                                        gameState[`player${enemyPlayer}`].board[targetLane].monster = null;
+                                        const statsDisplay = document.getElementById(`stats-p${opponentUIRow}-l${targetLane}-monster`);
+                                        slot.innerHTML = '';
+                                        slot.classList.add('slot-label');
+                                        slot.style.border = '2px dashed #666';
+                                        slot.style.cursor = 'default';
+                                        if (statsDisplay) {
+                                            statsDisplay.style.display = 'none';
+                                        }
+                                        showCombatLog(`Damage Tower destroys ${enemyMonster.name}!`, 2000);
+                                    } else {
+                                        updateMonsterStats(enemyPlayer, targetLane);
+                                        slot.style.border = 'none';
+                                        slot.style.cursor = 'default';
+                                        showCombatLog(`Damage Tower deals 2 damage to ${enemyMonster.name}!`, 2000);
+                                    }
+                                    
+                                    // Remove all click handlers and styling
+                                    clearDamageTowerTargeting();
+                                    updateStatsDisplay();
+                                };
+                                slot.addEventListener('click', clickHandler, { once: true });
+                                slot.dataset.damageClickHandler = 'true';
+                            }
+                        }
+                    }
+                    break;
+            }
+
+            updateBuildingButtonStates();
+            hideSmackModal();
+        }
+
+        function clearDamageTowerTargeting() {
+            const opponentUIRow = 2;
+            for (let targetLane = 1; targetLane <= 4; targetLane++) {
+                const slot = document.querySelector(`[data-player="${opponentUIRow}"][data-lane="${targetLane}"][data-type="monster"]`);
+                if (slot && slot.dataset.damageClickHandler) {
+                    slot.style.cursor = 'default';
+                    slot.style.border = 'none';
+                    delete slot.dataset.damageClickHandler;
+                }
+            }
+        }
+
         function updateSmackButtonStates() {
             // Update existing smack buttons and animations
             const cards = document.querySelectorAll('.played-card');
@@ -1893,6 +2063,8 @@
                 card.classList.remove('has-affordable-smack');
                 
                 const cardId = parseInt(card.dataset.cardId);
+                
+                // Check for monster smacks
                 const monster = Object.values(gameState[`player${currentPlayer}`].board)
                     .flatMap(lane => [lane.monster])
                     .find(m => m && m.uniqueId === cardId);
@@ -1909,19 +2081,43 @@
                         card.classList.add('has-affordable-smack');
                     }
                 }
+                
+                // Check for building abilities
+                const building = Object.values(gameState[`player${currentPlayer}`].board)
+                    .flatMap(lane => [lane.building])
+                    .find(b => b && b.uniqueId === cardId);
+                
+                if (building && building.activeAbility) {
+                    const hasUsed = gameState[`player${currentPlayer}`].usedBuildings.includes(cardId);
+                    
+                    // Check if this card is on my side of the board (bottom row = data-player="1")
+                    const uiPlayer = parseInt(card.closest('[data-player]').dataset.player);
+                    const isMyCard = uiPlayer === 1; // Bottom row is always my cards
+                    
+                    if (!hasUsed && isMyCard && currentPlayer === myPlayerNumber) {
+                        card.classList.add('has-affordable-smack');
+                    }
+                }
             });
 
             // Show/hide the smack action button
             const hasAffordableSmacks = Object.values(gameState[`player${currentPlayer}`].board)
-                .some(lane => lane.monster && 
+                .some(lane => (lane.monster && 
                     lane.monster.smack && 
                     !gameState[`player${currentPlayer}`].usedSmacks.includes(lane.monster.uniqueId) &&
-                    gameState[`player${currentPlayer}`].magic >= lane.monster.smack.cost);
+                    gameState[`player${currentPlayer}`].magic >= lane.monster.smack.cost) ||
+                    (lane.building &&
+                    lane.building.activeAbility &&
+                    !gameState[`player${currentPlayer}`].usedBuildings.includes(lane.building.uniqueId)));
 
             const smackActionBtn = document.querySelector('.field-btn.smack-action');
             if (smackActionBtn) {
                 smackActionBtn.style.display = hasAffordableSmacks && currentPlayer === myPlayerNumber ? 'block' : 'none';
             }
+        }
+
+        function updateBuildingButtonStates() {
+            updateSmackButtonStates(); // Reuse the same function since we merged the logic
         }
 
         function addCardToBoard(player, lane, cardType, card) {
@@ -2209,6 +2405,16 @@
                             console.log(`${defendingMonster.name} destroyed!`);
                             combatMessages.push(`${defendingMonster.name} is destroyed!`);
                             
+                            // Check for Healing Shrine effect before removing monster
+                            const defendingBuilding = gameState[`player${defendingPlayer}`].board[lane].building;
+                            if (defendingBuilding && defendingBuilding.onMonsterDeath === 'heal_wizard_5') {
+                                gameState[`player${defendingPlayer}`].health += 5;
+                                if (gameState[`player${defendingPlayer}`].health > 25) {
+                                    gameState[`player${defendingPlayer}`].health = 25;
+                                }
+                                combatMessages.push(`Healing Shrine heals Player ${defendingPlayer} for 5!`);
+                            }
+                            
                             gameState[`player${defendingPlayer}`].board[lane].monster = null;
                             // Use perspective-based board row for visual updates
                             const boardRow = defendingPlayer === myPlayerNumber ? 1 : 2;
@@ -2422,6 +2628,51 @@
                         return true;
                     }
                     break;
+                case 'destroy_enemy_monster':
+                    const destroyTarget = gameState[`player${targetPlayer}`].board[targetLane].monster;
+                    if (destroyTarget) {
+                        // Destroy the monster (don't return to hand, just remove)
+                        gameState[`player${targetPlayer}`].board[targetLane].monster = null;
+                        
+                        // Clear the slot visually using perspective-based board row
+                        const boardRow = targetPlayer === myPlayerNumber ? 1 : 2;
+                        const slot = document.querySelector(`[data-player="${boardRow}"][data-lane="${targetLane}"][data-type="monster"]`);
+                        const statsDisplay = document.getElementById(`stats-p${boardRow}-l${targetLane}-monster`);
+                        if (slot) {
+                            slot.innerHTML = '';
+                            slot.classList.add('slot-label');
+                            slot.style.border = '2px dashed #666';
+                        }
+                        if (statsDisplay) {
+                            statsDisplay.style.display = 'none';
+                        }
+                        
+                        showCombatLog(`${destroyTarget.name} destroyed!`, 2000);
+                        return true;
+                    }
+                    break;
+                case 'hand_burst_damage':
+                    // Deal 1 damage per card in hand to enemy wizard
+                    const handSize = gameState[`player${currentPlayer}`].hand.length;
+                    const damage = handSize;
+                    
+                    gameState[`player${targetPlayer}`].health -= damage;
+                    if (gameState[`player${targetPlayer}`].health < 0) {
+                        gameState[`player${targetPlayer}`].health = 0;
+                    }
+                    
+                    // Show damage on enemy wizard
+                    const playerInfoSelector = targetPlayer === myPlayerNumber ? '.player1-info' : '.player2-info';
+                    const playerInfo = document.querySelector(playerInfoSelector);
+                    if (playerInfo) {
+                        showDamageNumber(playerInfo, damage);
+                    }
+                    
+                    updateStatsDisplay();
+                    checkGameOver();
+                    
+                    showCombatLog(`Hand Burst deals ${damage} damage to enemy wizard! (${handSize} cards in hand)`, 2000);
+                    return true;
             }
             return false;
         }

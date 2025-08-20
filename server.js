@@ -264,6 +264,28 @@ const customCards = [
         image: 'https://playlilguys.com/wp-content/uploads/2025/07/BB-5.webp'
     },
     {
+        id: 'BB-7',
+        type: 'building',
+        name: 'Healing Shrine',
+        cost: 1,
+        effect: 'Heals your wizard for 5 when a monster in this lane dies',
+        attackBonus: 0,
+        healthBonus: 0,
+        onMonsterDeath: 'heal_wizard_5',
+        image: 'https://playlilguys.com/wp-content/uploads/2025/07/BB-7.webp'
+    },
+    {
+        id: 'BB-8',
+        type: 'building',
+        name: 'Damage Tower',
+        cost: 1,
+        effect: 'Deal 2 damage to any enemy monster once per turn',
+        attackBonus: 0,
+        healthBonus: 0,
+        activeAbility: 'damage_tower',
+        image: 'https://playlilguys.com/wp-content/uploads/2025/07/BB-8.webp'
+    },
+    {
         id: 'SS-2',
         type: 'spell',
         name: 'Return Spell',
@@ -271,6 +293,24 @@ const customCards = [
         effect: 'Move enemy monster back to their hand',
         spellEffect: 'return_enemy_monster',
         image: 'https://playlilguys.com/wp-content/uploads/2025/07/SS-2.webp'
+    },
+    {
+        id: 'SS-5',
+        type: 'spell',
+        name: 'Destroy Spell',
+        cost: 1,
+        effect: 'Destroy target enemy monster',
+        spellEffect: 'destroy_enemy_monster',
+        image: 'https://playlilguys.com/wp-content/uploads/2025/07/SS-5.webp'
+    },
+    {
+        id: 'SS-7',
+        type: 'spell',
+        name: 'Hand Burst',
+        cost: 1,
+        effect: 'Deal 1 damage to enemy wizard per card in your hand',
+        spellEffect: 'hand_burst_damage',
+        image: 'https://playlilguys.com/wp-content/uploads/2025/07/SS-7.webp'
     }
 ];
 
