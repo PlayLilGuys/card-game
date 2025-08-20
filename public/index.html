@@ -838,7 +838,7 @@
         <div class="multiplayer-status" id="multiplayer-status">
             <div class="connection-info">
                 <span id="connection-status">🔴 Not Connected</span>
-                <button class="ready-btn" id="ready-btn" onclick="toggleReady()">Ready Up</button>
+                <button class="ready-btn" id="ready-btn" onclick="toggleReady()" disabled>Ready Up</button>
             </div>
             <div class="players-ready" id="players-ready">
                 <div id="player1-ready">Player 1: Not Ready</div>
@@ -975,6 +975,19 @@
             document.getElementById('connection-status').textContent = 
                 `🟢 Connected (${readyPlayerIds.length} players online)`;
         }
+
+        // Listen for game start
+        socket.on("gameStarted", (serverGameState) => {
+            console.log("Game started! Received game state from server");
+            gameState = serverGameState;
+            
+            // Clear local card pool since server manages it now
+            cardPool.length = 0;
+            
+            // Update displays
+            updateAllDisplays();
+            showCombatLog("Game Started! All players ready.", 3000);
+        });
 
         // Listen for when another player plays a card
         socket.on("cardPlayed", (data) => {
@@ -2109,10 +2122,11 @@
             document.getElementById('player2-deck').addEventListener('click', () => drawCardFromDeck(2));
             document.getElementById('cancel-smack-btn').addEventListener('click', hideSmackModal);
             
-            for (let i = 0; i < 5; i++) {
-                drawCard(1);
-                drawCard(2);
-            }
+            // Don't deal initial cards - server handles this
+            // for (let i = 0; i < 5; i++) {
+            //     drawCard(1);
+            //     drawCard(2);
+            // }
             
             setupBoardDrop();
             updateHandDisplay();
