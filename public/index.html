@@ -95,7 +95,10 @@
             padding: 5px 10px;
             border-radius: 4px;
             font-weight: bold;
-            min-width: 80px;
+            min-width: 70px;
+            text-align: center;
+            display: flex;
+            align-items: center;
             justify-content: center;
         }
 
@@ -691,6 +694,7 @@
             <div class="wizard-stats">
                 <div class="stat health">❤️ <span id="player2-health">25</span></div>
                 <div class="stat magic">✨ <span id="player2-magic">0</span></div>
+                <div class="stat hand-count">🃏 <span id="player2-hand-display">5</span></div>
             </div>
         </div>
         <div class="hand-area" id="player2-hand-area">
@@ -809,6 +813,7 @@
                         <div class="wizard-stats">
                             <div class="stat health">❤️ <span id="player1-health">25</span></div>
                             <div class="stat magic">✨ <span id="player1-magic">0</span></div>
+                            <div class="stat hand-count">🃏 <span id="player1-hand-display">5</span></div>
                         </div>
                     </div>
 
@@ -984,6 +989,13 @@
             // Clear local card pool since server manages it now
             cardPool.length = 0;
             
+            // Assign player numbers based on connection order
+            const playerIds = Object.keys(playersReadyList);
+            const myIndex = playerIds.indexOf(socket.id);
+            myPlayerNumber = myIndex + 1; // 1 or 2
+            
+            console.log(`I am player ${myPlayerNumber}`);
+            
             // Update displays
             updateAllDisplays();
             showCombatLog("Game Started! All players ready.", 3000);
@@ -1068,6 +1080,7 @@
         let draggedCard = null;
         let cardIdCounter = 1;
         let hasDrawnThisTurn = false;
+        let myPlayerNumber = 1; // Will be set when game starts
         
         let gameState = {
             player1: {
@@ -1424,13 +1437,20 @@
 
         function handleDragStart(e) {
             const player = parseInt(e.target.dataset.player);
-            if (player !== currentPlayer) {
+            // Only allow dragging your own cards
+            if (player !== myPlayerNumber) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Only allow dragging on your turn
+            if (currentPlayer !== myPlayerNumber) {
                 e.preventDefault();
                 return;
             }
 
             const cardId = parseInt(e.target.dataset.cardId);
-            draggedCard = gameState[`player${currentPlayer}`].hand.find(card => card.uniqueId === cardId);
+            draggedCard = gameState[`player${myPlayerNumber}`].hand.find(card => card.uniqueId === cardId);
             
             e.target.classList.add('dragging');
             updateDropZoneVisuals(true);
@@ -1825,23 +1845,30 @@
                 const playerHand = gameState[`player${player}`].hand;
                 const handContainer = document.getElementById(`player${player}-hand`);
                 const handCountEl = document.getElementById(`player${player}-hand-count`);
+                const handDisplayEl = document.getElementById(`player${player}-hand-display`);
                 const handArea = document.getElementById(`player${player}-hand-area`);
                 
                 if (!handContainer || !handCountEl || !handArea) continue;
                 
-                if (player === currentPlayer) {
-                    handArea.classList.remove('hidden');
+                // Update hand count display in wizard stats
+                if (handDisplayEl) {
+                    handDisplayEl.textContent = playerHand.length;
+                }
+                handCountEl.textContent = playerHand.length;
+                
+                // Only show your own hand cards
+                if (player === myPlayerNumber) {
+                    // Show my hand
+                    handArea.style.display = 'block';
                     handContainer.innerHTML = '';
                     
                     playerHand.forEach(card => {
                         handContainer.appendChild(createCardElement(card, player));
                     });
                 } else {
-                    handArea.classList.add('hidden');
-                    handContainer.innerHTML = '<div class="hidden-message">Opponent\'s hand is hidden</div>';
+                    // Hide opponent's hand
+                    handArea.style.display = 'none';
                 }
-                
-                handCountEl.textContent = playerHand.length;
             }
         }
 
