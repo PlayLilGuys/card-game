@@ -987,6 +987,7 @@
         socket.on("gameStarted", (serverGameState) => {
             console.log("Game started! Received game state from server");
             gameState = serverGameState;
+            gameStarted = true; // Mark game as started
             
             // Set turn state from server
             currentPlayer = serverGameState.currentPlayer || 1;
@@ -1002,11 +1003,12 @@
             
             console.log(`I am player ${myPlayerNumber}`);
             console.log(`Current turn player: ${currentPlayer}`);
+            console.log(`Game sequence: Player ${currentPlayer} goes first on Turn ${currentTurn}`);
             
             // Update displays
             updateAllDisplays();
             updatePlayerLabels();
-            showCombatLog("Game Started! All players ready.", 3000);
+            showCombatLog("Game Started! Player 1 goes first.", 3000);
         });
 
         // Listen for when another player plays a card
@@ -1052,6 +1054,12 @@
             // Update game state if provided
             if (data.gameState) {
                 gameState = data.gameState;
+                
+                // Update UI displays with new game state
+                document.getElementById('player1-health').textContent = gameState.player1.health;
+                document.getElementById('player2-health').textContent = gameState.player2.health;
+                document.getElementById('player1-magic').textContent = gameState.player1.magic;
+                document.getElementById('player2-magic').textContent = gameState.player2.magic;
             }
             
             // Reset turn-specific states
@@ -1123,6 +1131,7 @@
         let cardIdCounter = 1;
         let hasDrawnThisTurn = false;
         let myPlayerNumber = 1; // Will be set when game starts
+        let gameStarted = false; // Track if multiplayer game has started
         
         let gameState = {
             player1: {
@@ -1412,10 +1421,7 @@
             }
         ];
 
-        const cardPool = [];
-        customCards.forEach(card => {
-            cardPool.push({...card, uniqueId: cardIdCounter++});
-        });
+        const cardPool = []; // Start empty - server will provide cards
 
         function getRandomCard() {
             if (cardPool.length === 0) {
@@ -1478,6 +1484,12 @@
         }
 
         function handleDragStart(e) {
+            // Don't allow dragging if game hasn't started
+            if (!gameStarted) {
+                e.preventDefault();
+                return;
+            }
+            
             const player = parseInt(e.target.dataset.player);
             // Only allow dragging your own cards
             if (player !== myPlayerNumber) {
@@ -1929,7 +1941,7 @@
         }
 
         function drawCardFromDeck() {
-            if (hasDrawnThisTurn || currentTurn === 1 || currentPlayer !== myPlayerNumber) return;
+            if (!gameStarted || hasDrawnThisTurn || currentTurn === 1 || currentPlayer !== myPlayerNumber) return;
             
             const success = drawCard(myPlayerNumber);
             if (success) {
@@ -2065,6 +2077,14 @@
             const endTurnBtns = document.querySelectorAll('[id*="end-turn"]');
             const myDecks = document.querySelectorAll('#my-deck, #my-deck-right');
             
+            // Disable everything if game hasn't started
+            if (!gameStarted) {
+                rollDiceBtn.disabled = true;
+                endTurnBtns.forEach(btn => btn.disabled = true);
+                myDecks.forEach(deck => deck.classList.add('disabled'));
+                return;
+            }
+            
             const isMyTurn = currentPlayer === myPlayerNumber;
             const hasMagic = gameState[`player${currentPlayer}`].magic > 0;
             
@@ -2088,11 +2108,19 @@
         }
 
         function rollDice() {
+            // Check if multiplayer game has started
+            if (!gameStarted) {
+                showCombatLog("Wait for both players to ready up!", 1500);
+                return;
+            }
+            
             // Only allow rolling on your turn
             if (currentPlayer !== myPlayerNumber) {
                 showCombatLog("It's not your turn!", 1500);
                 return;
             }
+            
+            console.log(`Player ${myPlayerNumber} rolling dice on turn ${currentTurn}`);
             
             const roll = Math.floor(Math.random() * 6) + 1;
             const bonus = gameState[`player${currentPlayer}`].nextTurnMagicBonus;
@@ -2126,11 +2154,19 @@
         }
 
         function endTurn() {
+            // Check if multiplayer game has started
+            if (!gameStarted) {
+                showCombatLog("Wait for both players to ready up!", 1500);
+                return;
+            }
+            
             // Only allow ending turn on your turn
             if (currentPlayer !== myPlayerNumber) {
                 showCombatLog("It's not your turn!", 1500);
                 return;
             }
+            
+            console.log(`Player ${myPlayerNumber} ending turn ${currentTurn}`);
             
             performCombat();
             
