@@ -687,16 +687,6 @@
 <body>
     <div class="game-container">
         <!-- Removed Lil' Guys title -->
-        
-        <!-- Player 2 Info and Hand (Top) -->
-        <div class="player-info player2-info">
-            <div>Player 2 (Wizard)</div>
-            <div class="wizard-stats">
-                <div class="stat health">❤️ <span id="player2-health">25</span></div>
-                <div class="stat magic">✨ <span id="player2-magic">0</span></div>
-                <div class="stat hand-count">🃏 <span id="player2-hand-display">5</span></div>
-            </div>
-        </div>
 
         <div class="main-content">
             <!-- Left Panel - Game Board -->
@@ -815,6 +805,17 @@
                         <button class="field-btn smack-action" onclick="showSmackOptions()">Use Smack</button>
                         <button class="field-btn" id="end-turn-right" onclick="endTurn()">End Turn</button>
                     </div>
+
+                    <!-- Opponent Info -->
+                    <div class="player-info player2-info">
+                        <div>Opponent (Wizard)</div>
+                        <div class="wizard-stats">
+                            <div class="stat health">❤️ <span id="player2-health">25</span></div>
+                            <div class="stat magic">✨ <span id="player2-magic">0</span></div>
+                            <div class="stat hand-count">🃏 <span id="player2-hand-display">5</span></div>
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- Player 1 Hand -->
