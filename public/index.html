@@ -1546,9 +1546,10 @@
                     const lane = parseInt(slot.dataset.lane);
                     const slotType = slot.dataset.type;
                     
-                    // Handle spell cards - they can target any enemy slot
+                    // Handle spell cards - they can target enemy board row
                     if (draggedCard.type === 'spell') {
-                        const canCast = player !== currentPlayer && 
+                        const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+                        const canCast = player === enemyPlayer && 
                                        gameState[`player${currentPlayer}`].magic >= draggedCard.cost;
                         if (canCast) {
                             slot.classList.add('valid-drop-target');
@@ -1556,16 +1557,16 @@
                             slot.classList.add('invalid-drop-target');
                         }
                     } else {
-                        // Original logic for monsters and buildings - can only place on my UI side
-                        const myUISide = myPlayerNumber === 1 ? 1 : 2;
-                        const canPlace = player === myUISide && 
+                        // Original logic for monsters and buildings - can only place on correct row
+                        const myBoardRow = myPlayerNumber; // Player 1 = bottom row (1), Player 2 = top row (2)
+                        const canPlace = player === myBoardRow && 
                                        draggedCard.type === slotType && 
                                        gameState[`player${myPlayerNumber}`].board[lane][slotType] === null &&
                                        gameState[`player${myPlayerNumber}`].magic >= draggedCard.cost;
                         
                         if (canPlace) {
                             slot.classList.add('valid-drop-target');
-                        } else if (player === myUISide && draggedCard.type === slotType) {
+                        } else if (player === myBoardRow && draggedCard.type === slotType) {
                             slot.classList.add('invalid-drop-target');
                         }
                     }
@@ -1585,7 +1586,9 @@
         function updateMonsterStats(player, lane) {
             const monster = gameState[`player${player}`].board[lane].monster;
             if (monster) {
-                const statsDisplay = document.getElementById(`stats-p${player}-l${lane}-monster`);
+                // Use board row (player number) for display
+                const boardRow = player;
+                const statsDisplay = document.getElementById(`stats-p${boardRow}-l${lane}-monster`);
                 if (statsDisplay) {
                     statsDisplay.innerHTML = `
                         <div class="stats-attack">⚔️${monster.attack}</div>
@@ -1683,8 +1686,9 @@
                             hitCount++;
                             if (enemyMonster.health <= 0) {
                                 gameState[`player${enemyPlayer}`].board[lane].monster = null;
-                                const slot = document.querySelector(`[data-player="${enemyPlayer}"][data-lane="${lane}"][data-type="monster"]`);
-                                const statsDisplay = document.getElementById(`stats-p${enemyPlayer}-l${lane}-monster`);
+                                const boardRow = enemyPlayer;
+                                const slot = document.querySelector(`[data-player="${boardRow}"][data-lane="${lane}"][data-type="monster"]`);
+                                const statsDisplay = document.getElementById(`stats-p${boardRow}-l${lane}-monster`);
                                 if (slot) {
                                     slot.innerHTML = '';
                                     slot.classList.add('slot-label');
@@ -1822,20 +1826,26 @@
         }
 
         function addCardToBoard(player, lane, cardType, card) {
-            const slot = document.querySelector(`[data-player="${player}"][data-lane="${lane}"][data-type="${cardType}"]`);
-            const monsterStatsDisplay = document.getElementById(`stats-p${player}-l${lane}-monster`);
+            // Player 1 always goes to bottom row (data-player="1"), Player 2 to top row (data-player="2")
+            const boardRow = player; 
+            const slot = document.querySelector(`[data-player="${boardRow}"][data-lane="${lane}"][data-type="${cardType}"]`);
+            const monsterStatsDisplay = document.getElementById(`stats-p${boardRow}-l${lane}-monster`);
+            
             slot.innerHTML = '';
             slot.classList.remove('slot-label');
             slot.style.border = 'none';
             const playedCard = createPlayedCardElement(card);
             slot.appendChild(playedCard);
+            
             // Store base stats for monsters
             if (cardType === 'monster') {
                 if (typeof card.baseAttack === 'undefined') card.baseAttack = card.attack;
                 if (typeof card.baseHealth === 'undefined') card.baseHealth = card.health;
             }
+            
             // Place card in board
             gameState[`player${player}`].board[lane][cardType] = card;
+            
             // Always recalculate monster stats if monster is present
             const monster = gameState[`player${player}`].board[lane].monster;
             const building = gameState[`player${player}`].board[lane].building;
@@ -1877,25 +1887,26 @@
                     const lane = parseInt(slot.dataset.lane);
                     const slotType = slot.dataset.type;
                     
-                    // Handle spell casting
+                    // Handle spell casting - target enemy player's board row
                     if (draggedCard.type === 'spell') {
-                        if (player === currentPlayer || gameState[`player${currentPlayer}`].magic < draggedCard.cost) return;
+                        const enemyPlayer = currentPlayer === 1 ? 2 : 1;
+                        if (player !== enemyPlayer || gameState[`player${currentPlayer}`].magic < draggedCard.cost) return;
                         
                         gameState[`player${currentPlayer}`].magic -= draggedCard.cost;
-                        document.getElementById(`player${currentPlayer}-magic`).textContent = gameState[`player${currentPlayer}`].magic;
+                        updateStatsDisplay();
                         
                         gameState[`player${currentPlayer}`].hand = gameState[`player${currentPlayer}`].hand.filter(c => c.uniqueId !== draggedCard.uniqueId);
                         
-                        castSpell(draggedCard, player, lane, slotType);
+                        castSpell(draggedCard, enemyPlayer, lane, slotType);
                         updateHandDisplay();
                         draggedCard = null;
                         return;
                     }
                     
-                    // Original logic for monsters and buildings - place on my side only
-                    const myUISide = myPlayerNumber === 1 ? 1 : 2; // Player 1 uses bottom UI (data-player="1"), Player 2 uses top UI (data-player="2")
+                    // Original logic for monsters and buildings - place on correct row based on player number
+                    const myBoardRow = myPlayerNumber; // Player 1 uses row 1 (bottom), Player 2 uses row 2 (top)
                     
-                    if (player !== myUISide || draggedCard.type !== slotType) return;
+                    if (player !== myBoardRow || draggedCard.type !== slotType) return;
                     if (gameState[`player${myPlayerNumber}`].board[lane][slotType] !== null) return;
                     if (gameState[`player${myPlayerNumber}`].magic < draggedCard.cost) return;
                     if (currentPlayer !== myPlayerNumber) return; // Only play on your turn
@@ -2050,8 +2061,10 @@
                             combatMessages.push(`${defendingMonster.name} is destroyed!`);
                             
                             gameState[`player${defendingPlayer}`].board[lane].monster = null;
-                            const slot = document.querySelector(`[data-player="${defendingPlayer}"][data-lane="${lane}"][data-type="monster"]`);
-                            const statsDisplay = document.getElementById(`stats-p${defendingPlayer}-l${lane}-monster`);
+                            // Use defendingPlayer as board row for visual updates
+                            const boardRow = defendingPlayer;
+                            const slot = document.querySelector(`[data-player="${boardRow}"][data-lane="${lane}"][data-type="monster"]`);
+                            const statsDisplay = document.getElementById(`stats-p${boardRow}-l${lane}-monster`);
                             
                             if (slot) {
                                 slot.innerHTML = '';
@@ -2234,9 +2247,10 @@
                         gameState[`player${targetPlayer}`].hand.push(targetMonster);
                         gameState[`player${targetPlayer}`].board[targetLane].monster = null;
                         
-                        // Clear the slot visually
-                        const slot = document.querySelector(`[data-player="${targetPlayer}"][data-lane="${targetLane}"][data-type="monster"]`);
-                        const statsDisplay = document.getElementById(`stats-p${targetPlayer}-l${targetLane}-monster`);
+                        // Clear the slot visually using correct board row
+                        const boardRow = targetPlayer;
+                        const slot = document.querySelector(`[data-player="${boardRow}"][data-lane="${targetLane}"][data-type="monster"]`);
+                        const statsDisplay = document.getElementById(`stats-p${boardRow}-l${targetLane}-monster`);
                         if (slot) {
                             slot.innerHTML = '';
                             slot.classList.add('slot-label');
