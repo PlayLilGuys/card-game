@@ -430,6 +430,12 @@ io.on("connection", (socket) => {
     
     console.log(`Player ${socket.id} ended turn`);
     
+    // Update server game state with combat results
+    if (data.gameState) {
+      sharedGameState = data.gameState;
+      console.log("Updated server game state with combat damage");
+    }
+    
     // Update server-side turn state
     currentPlayer = currentPlayer === 1 ? 2 : 1;
     if (currentPlayer === 1) {
@@ -440,12 +446,12 @@ io.on("connection", (socket) => {
     const prevPlayer = currentPlayer === 1 ? 2 : 1;
     sharedGameState[`player${prevPlayer}`].magic = 0;
     
-    // Broadcast turn change to all players
+    // Broadcast turn change AND updated game state to all players
     io.emit("turnEnded", {
       playerId: socket.id,
       newCurrentPlayer: currentPlayer,
       currentTurn: currentTurn,
-      gameState: sharedGameState
+      gameState: sharedGameState // This now includes combat damage
     });
     
     console.log(`Turn ended. Now it's Player ${currentPlayer}'s turn. Turn ${currentTurn}`);

@@ -1051,9 +1051,13 @@
             currentPlayer = data.newCurrentPlayer;
             currentTurn = data.currentTurn;
             
-            // Update game state if provided
+            // ALWAYS update game state if provided - this includes combat damage
             if (data.gameState) {
+                console.log("Updating game state with combat results from server");
                 gameState = data.gameState;
+                
+                // Update ALL board visuals with the new game state
+                updateBoardFromGameState();
                 updateStatsDisplay();
             }
             
@@ -1584,6 +1588,78 @@
                 monster.health += building.healthBonus || 0;
                 monster.maxHealth = monster.health;
             }
+        }
+
+        function updateBoardFromGameState() {
+            console.log("Updating board visuals from game state");
+            
+            // Update both players' boards
+            for (let player = 1; player <= 2; player++) {
+                const boardRow = player === myPlayerNumber ? 1 : 2; // Perspective-based row
+                
+                for (let lane = 1; lane <= 4; lane++) {
+                    // Update monster slots
+                    const monster = gameState[`player${player}`].board[lane].monster;
+                    const monsterSlot = document.querySelector(`[data-player="${boardRow}"][data-lane="${lane}"][data-type="monster"]`);
+                    const monsterStats = document.getElementById(`stats-p${boardRow}-l${lane}-monster`);
+                    
+                    if (monster) {
+                        // Monster exists - show it
+                        if (!monsterSlot.querySelector('.played-card')) {
+                            // Monster not visually present - add it
+                            monsterSlot.innerHTML = '';
+                            monsterSlot.classList.remove('slot-label');
+                            monsterSlot.style.border = 'none';
+                            const playedCard = createPlayedCardElement(monster);
+                            monsterSlot.appendChild(playedCard);
+                        }
+                        
+                        // Update stats
+                        if (monsterStats) {
+                            monsterStats.style.display = 'flex';
+                            monsterStats.innerHTML = `
+                                <div class="stats-attack">⚔️${monster.attack}</div>
+                                <div class="stats-health">❤️${monster.health}</div>
+                            `;
+                        }
+                    } else {
+                        // No monster - clear the slot
+                        if (monsterSlot.querySelector('.played-card')) {
+                            monsterSlot.innerHTML = '';
+                            monsterSlot.classList.add('slot-label');
+                            monsterSlot.style.border = '2px dashed #666';
+                        }
+                        
+                        if (monsterStats) {
+                            monsterStats.style.display = 'none';
+                        }
+                    }
+                    
+                    // Update building slots
+                    const building = gameState[`player${player}`].board[lane].building;
+                    const buildingSlot = document.querySelector(`[data-player="${boardRow}"][data-lane="${lane}"][data-type="building"]`);
+                    
+                    if (building) {
+                        // Building exists - show it
+                        if (!buildingSlot.querySelector('.played-card')) {
+                            buildingSlot.innerHTML = '';
+                            buildingSlot.classList.remove('slot-label');
+                            buildingSlot.style.border = 'none';
+                            const playedCard = createPlayedCardElement(building);
+                            buildingSlot.appendChild(playedCard);
+                        }
+                    } else {
+                        // No building - clear the slot
+                        if (buildingSlot.querySelector('.played-card')) {
+                            buildingSlot.innerHTML = '';
+                            buildingSlot.classList.add('slot-label');
+                            buildingSlot.style.border = '2px dashed #666';
+                        }
+                    }
+                }
+            }
+            
+            console.log("Board visuals updated successfully");
         }
 
         function updateMonsterStats(player, lane) {
@@ -2245,10 +2321,11 @@
             
             performCombat();
             
-            // Broadcast turn end to server - let server handle turn state changes
+            // Broadcast turn end WITH UPDATED GAME STATE to server
             if (socketConnected) {
                 socket.emit("endTurn", {
-                    playerId: socket.id
+                    playerId: socket.id,
+                    gameState: gameState // Send the updated game state with combat damage
                 });
             }
         }
