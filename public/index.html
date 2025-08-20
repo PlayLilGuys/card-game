@@ -1644,7 +1644,7 @@
 
         function useSmackAbility(player, lane, card) {
             gameState[`player${currentPlayer}`].magic -= card.smack.cost;
-            document.getElementById(`player${currentPlayer}-magic`).textContent = gameState[`player${currentPlayer}`].magic;
+            updateStatsDisplay(); // Use perspective-based update instead
 
             gameState[`player${currentPlayer}`].usedSmacks.push(card.uniqueId);
 
@@ -2059,6 +2059,10 @@
         function performCombat() {
             if (currentTurn === 1) return;
             
+            console.log("=== COMBAT START ===");
+            console.log("Attacking player:", currentPlayer);
+            console.log("Defending player:", currentPlayer === 1 ? 2 : 1);
+            
             let combatMessages = [];
             let damageDealt = false;
             
@@ -2069,11 +2073,14 @@
                 const attackingMonster = gameState[`player${attackingPlayer}`].board[lane].monster;
                 
                 if (attackingMonster) {
+                    console.log(`Lane ${lane}: ${attackingMonster.name} (${attackingMonster.attack} attack) attacking`);
                     const defendingMonster = gameState[`player${defendingPlayer}`].board[lane].monster;
                     const damage = attackingMonster.attack;
                     
                     if (defendingMonster) {
+                        console.log(`Target: ${defendingMonster.name} (${defendingMonster.health} health)`);
                         defendingMonster.health -= damage;
+                        console.log(`After damage: ${defendingMonster.health} health`);
                         combatMessages.push(`${attackingMonster.name} deals ${damage} damage to ${defendingMonster.name}!`);
                         
                         const defendingSlot = document.querySelector(`[data-player="${defendingPlayer === myPlayerNumber ? 1 : 2}"][data-lane="${lane}"][data-type="monster"]`);
@@ -2082,6 +2089,7 @@
                         }
                         
                         if (defendingMonster.health <= 0) {
+                            console.log(`${defendingMonster.name} destroyed!`);
                             combatMessages.push(`${defendingMonster.name} is destroyed!`);
                             
                             gameState[`player${defendingPlayer}`].board[lane].monster = null;
@@ -2104,7 +2112,10 @@
                         
                         damageDealt = true;
                     } else {
+                        console.log(`No defending monster - attacking player directly for ${damage} damage`);
+                        console.log(`Player ${defendingPlayer} health before: ${gameState[`player${defendingPlayer}`].health}`);
                         gameState[`player${defendingPlayer}`].health -= damage;
+                        console.log(`Player ${defendingPlayer} health after: ${gameState[`player${defendingPlayer}`].health}`);
                         combatMessages.push(`${attackingMonster.name} attacks Player ${defendingPlayer} directly for ${damage} damage!`);
                         
                         // Use perspective-based player info display
@@ -2127,6 +2138,9 @@
                     }
                 }
             }
+            
+            console.log("=== COMBAT END ===");
+            console.log("Final game state:", gameState);
             
             if (damageDealt && combatMessages.length > 0) {
                 showCombatLog(combatMessages.join('<br>'));
