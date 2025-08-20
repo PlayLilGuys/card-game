@@ -915,7 +915,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         // Socket.IO multiplayer integration
-        const socket = io('http://localhost:3001'); // Explicitly specify the server URL
+        const socket = io();
         let socketConnected = false;
         let playerReady = false;
         let playersReadyList = {};
@@ -926,18 +926,6 @@
             socketConnected = true;
             document.getElementById('connection-status').textContent = '🟢 Connected';
             document.getElementById('ready-btn').disabled = false;
-        });
-
-        // Handle connection errors
-        socket.on("connect_error", (error) => {
-            console.error("Connection error:", error);
-            document.getElementById('connection-status').textContent = '🔴 Connection Error';
-            document.getElementById('ready-btn').disabled = true;
-        });
-
-        // Debug: Log all socket events
-        socket.onAny((eventName, ...args) => {
-            console.log('Socket event:', eventName, args);
         });
 
         // Handle disconnection
@@ -1656,7 +1644,7 @@
 
         function useSmackAbility(player, lane, card) {
             gameState[`player${currentPlayer}`].magic -= card.smack.cost;
-            updateStatsDisplay(); // Use the proper stats update function
+            document.getElementById(`player${currentPlayer}-magic`).textContent = gameState[`player${currentPlayer}`].magic;
 
             gameState[`player${currentPlayer}`].usedSmacks.push(card.uniqueId);
 
@@ -1670,28 +1658,26 @@
                     break;
                 case 'empty_lane_power':
                     let emptyLanes = 0;
-                    for (let laneCheck = 1; laneCheck <= 4; laneCheck++) {
-                        if (!gameState[`player${currentPlayer}`].board[laneCheck].monster) {
+                    for (let lane = 1; lane <= 4; lane++) {
+                        if (!gameState[`player${currentPlayer}`].board[lane].monster) {
                             emptyLanes++;
                         }
                     }
                     card.attack += emptyLanes;
-                    card.baseAttack = card.attack; // Update base attack so it persists
                     updateMonsterStats(currentPlayer, lane);
                     showCombatLog(`Gained +${emptyLanes} attack from empty lanes!`, 2000);
                     break;
                 case 'team_heal':
                     let healedMonsters = 0;
-                    for (let laneCheck = 1; laneCheck <= 4; laneCheck++) {
-                        const monster = gameState[`player${currentPlayer}`].board[laneCheck].monster;
+                    for (let lane = 1; lane <= 4; lane++) {
+                        const monster = gameState[`player${currentPlayer}`].board[lane].monster;
                         if (monster) {
                             monster.health += 3;
-                            monster.baseHealth += 3; // Update base health
                             healedMonsters++;
-                            updateMonsterStats(currentPlayer, laneCheck);
+                            updateMonsterStats(currentPlayer, lane);
                         }
                     }
-                    showCombatLog(`Healed ${healedMonsters} monsters for +3 health!`, 2000);
+                    showCombatLog(`Healed all monsters for +3 health!`, 2000);
                     break;
                 case 'search_building':
                     const buildingIndex = cardPool.findIndex(c => c.type === 'building');
@@ -1706,19 +1692,17 @@
                     break;
                 case 'area_damage':
                     let hitCount = 0;
-                    let destroyedCount = 0;
                     const enemyPlayer = currentPlayer === 1 ? 2 : 1;
-                    for (let laneCheck = 1; laneCheck <= 4; laneCheck++) {
-                        const enemyMonster = gameState[`player${enemyPlayer}`].board[laneCheck].monster;
+                    for (let lane = 1; lane <= 4; lane++) {
+                        const enemyMonster = gameState[`player${enemyPlayer}`].board[lane].monster;
                         if (enemyMonster) {
                             enemyMonster.health -= 2;
                             hitCount++;
                             if (enemyMonster.health <= 0) {
-                                destroyedCount++;
-                                gameState[`player${enemyPlayer}`].board[laneCheck].monster = null;
+                                gameState[`player${enemyPlayer}`].board[lane].monster = null;
                                 const boardRow = enemyPlayer === myPlayerNumber ? 1 : 2;
-                                const slot = document.querySelector(`[data-player="${boardRow}"][data-lane="${laneCheck}"][data-type="monster"]`);
-                                const statsDisplay = document.getElementById(`stats-p${boardRow}-l${laneCheck}-monster`);
+                                const slot = document.querySelector(`[data-player="${boardRow}"][data-lane="${lane}"][data-type="monster"]`);
+                                const statsDisplay = document.getElementById(`stats-p${boardRow}-l${lane}-monster`);
                                 if (slot) {
                                     slot.innerHTML = '';
                                     slot.classList.add('slot-label');
@@ -1728,11 +1712,11 @@
                                     statsDisplay.style.display = 'none';
                                 }
                             } else {
-                                updateMonsterStats(enemyPlayer, laneCheck);
+                                updateMonsterStats(enemyPlayer, lane);
                             }
                         }
                     }
-                    showCombatLog(`Hit ${hitCount} enemies for 2 damage! ${destroyedCount} destroyed.`, 2000);
+                    showCombatLog(`Hit ${hitCount} enemies for 2 damage!`, 2000);
                     break;
                 case 'monster_swap':
                     showCombatLog('Select another monster to swap with', 2000);
@@ -1742,7 +1726,8 @@
                     if (gameState[`player${currentPlayer}`].health > 25) {
                         gameState[`player${currentPlayer}`].health = 25;
                     }
-                    updateStatsDisplay();
+                    updateStatsDisplay(); // Use perspective-based update instead
+                    checkGameOver();
                     showCombatLog(`Healed wizard for 5!`, 2000);
                     break;
                 case 'refresh_hand':
@@ -1772,24 +1757,20 @@
                 case 'direct_hit_p2':
                     gameState.player2.health -= 2;
                     if (gameState.player2.health < 0) gameState.player2.health = 0;
-                    updateStatsDisplay();
+                    document.getElementById('player2-health').textContent = gameState.player2.health;
                     checkGameOver();
-                    showCombatLog('Dealt 2 damage directly to player 2's wizard!', 2000);
+                    showCombatLog('Dealt 2 damage directly to player 2’s wizard!', 2000);
                     break;
                 case 'team_power_up':
-                    let poweredUpCount = 0;
-                    for (let laneCheck = 1; laneCheck <= 4; laneCheck++) {
-                        const monster = gameState[`player${currentPlayer}`].board[laneCheck].monster;
+                    for (let lane = 1; lane <= 4; lane++) {
+                        const monster = gameState[`player${currentPlayer}`].board[lane].monster;
                         if (monster) {
                             monster.attack += 1;
                             monster.health += 1;
-                            monster.baseAttack += 1;
-                            monster.baseHealth += 1;
-                            poweredUpCount++;
-                            updateMonsterStats(currentPlayer, laneCheck);
+                            updateMonsterStats(currentPlayer, lane);
                         }
                     }
-                    showCombatLog(`${poweredUpCount} monsters gained +1 attack and +1 health!`, 2000);
+                    showCombatLog('All your monsters gain +1 attack and +1 health!', 2000);
                     break;
                 case 'return_enemy_monster':
                     // New effect for returning enemy monster to hand
@@ -1841,9 +1822,8 @@
                     // Check if this card is on my side of the board (bottom row = data-player="1")
                     const uiPlayer = parseInt(card.closest('[data-player]').dataset.player);
                     const isMyCard = uiPlayer === 1; // Bottom row is always my cards
-                    const isMyTurn = currentPlayer === myPlayerNumber;
                     
-                    if (!hasUsed && canAfford && isMyCard && isMyTurn) {
+                    if (!hasUsed && canAfford && isMyCard && currentPlayer === myPlayerNumber) {
                         card.classList.add('has-affordable-smack');
                     }
                 }
@@ -1887,7 +1867,10 @@
             }
             
             // Place card in board
-            gameState[`player${player}`].board[lane][cardType] =
+            gameState[`player${player}`].board[lane][cardType] = card;
+            
+            // Always recalculate monster stats if monster is present
+            const monster = gameState[`player${player}`].board[lane].monster;
             const building = gameState[`player${player}`].board[lane].building;
             if (monster) {
                 // Reset to base
@@ -2087,21 +2070,13 @@
                 
                 if (attackingMonster) {
                     const defendingMonster = gameState[`player${defendingPlayer}`].board[lane].monster;
-                    const defendingBuilding = gameState[`player${defendingPlayer}`].board[lane].building;
-                    let damage = attackingMonster.attack;
+                    const damage = attackingMonster.attack;
                     
                     if (defendingMonster) {
-                        // Apply damage reduction if building exists
-                        if (defendingBuilding && defendingBuilding.damageReduction) {
-                            damage = Math.max(0, damage - defendingBuilding.damageReduction);
-                        }
-                        
                         defendingMonster.health -= damage;
                         combatMessages.push(`${attackingMonster.name} deals ${damage} damage to ${defendingMonster.name}!`);
                         
-                        // Show damage number animation
-                        const defendingBoardRow = defendingPlayer === myPlayerNumber ? 1 : 2;
-                        const defendingSlot = document.querySelector(`[data-player="${defendingBoardRow}"][data-lane="${lane}"][data-type="monster"]`);
+                        const defendingSlot = document.querySelector(`[data-player="${defendingPlayer === myPlayerNumber ? 1 : 2}"][data-lane="${lane}"][data-type="monster"]`);
                         if (defendingSlot) {
                             showDamageNumber(defendingSlot, damage);
                         }
@@ -2109,10 +2084,8 @@
                         if (defendingMonster.health <= 0) {
                             combatMessages.push(`${defendingMonster.name} is destroyed!`);
                             
-                            // Remove from game state
                             gameState[`player${defendingPlayer}`].board[lane].monster = null;
-                            
-                            // Clear from UI using perspective-based board row
+                            // Use perspective-based board row for visual updates
                             const boardRow = defendingPlayer === myPlayerNumber ? 1 : 2;
                             const slot = document.querySelector(`[data-player="${boardRow}"][data-lane="${lane}"][data-type="monster"]`);
                             const statsDisplay = document.getElementById(`stats-p${boardRow}-l${lane}-monster`);
@@ -2120,40 +2093,35 @@
                             if (slot) {
                                 slot.innerHTML = '';
                                 slot.classList.add('slot-label');
-                                slot.style.border = '2px dashed #666';
+                                slot.style.border = '2px dashed #666'; // Restore the dotted border when monster is destroyed
                             }
                             if (statsDisplay) {
                                 statsDisplay.style.display = 'none';
                             }
                         } else {
-                            // Update monster stats display with new health
                             updateMonsterStats(defendingPlayer, lane);
                         }
                         
                         damageDealt = true;
                     } else {
-                        // Direct attack on player
                         gameState[`player${defendingPlayer}`].health -= damage;
                         combatMessages.push(`${attackingMonster.name} attacks Player ${defendingPlayer} directly for ${damage} damage!`);
                         
-                        // Show damage on player info
-                        const playerInfo = defendingPlayer === myPlayerNumber ? 
-                            document.querySelector('.player1-info') : 
-                            document.querySelector('.player2-info');
+                        // Use perspective-based player info display
+                        const playerInfoSelector = defendingPlayer === myPlayerNumber ? '.player1-info' : '.player2-info';
+                        const playerInfo = document.querySelector(playerInfoSelector);
                         if (playerInfo) {
                             showDamageNumber(playerInfo, damage);
                         }
                         
-                        // Update health display
-                        updateStatsDisplay();
+                        updateStatsDisplay(); // Make sure stats are updated
+                        checkGameOver();
                         
                         damageDealt = true;
                         
                         if (gameState[`player${defendingPlayer}`].health <= 0) {
-                            gameState[`player${defendingPlayer}`].health = 0;
                             combatMessages.push(`Player ${defendingPlayer} is defeated! Player ${attackingPlayer} wins!`);
                             showCombatLog(combatMessages.join('<br>'), 5000);
-                            checkGameOver();
                             return;
                         }
                     }
@@ -2161,7 +2129,7 @@
             }
             
             if (damageDealt && combatMessages.length > 0) {
-                showCombatLog(combatMessages.join('<br>'), 3000);
+                showCombatLog(combatMessages.join('<br>'));
             }
         }
 
