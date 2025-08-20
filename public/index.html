@@ -702,16 +702,6 @@
             <!-- Left Panel - Game Board -->
             <div class="left-panel">
                 <div class="board-container">
-                    <div class="deck-areas">
-                        <div class="deck" id="my-deck">
-                            <div class="deck-label">MY DECK</div>
-                            <div class="deck-count" id="my-deck-count">30</div>
-                        </div>
-                        <div class="field-controls">
-                            <button class="field-btn" id="end-turn-left" onclick="endTurn()">End Turn</button>
-                        </div>
-                    </div>
-                    
                     <div class="board">
                         <!-- Lane 1 -->
                         <div class="lane">
@@ -1066,7 +1056,6 @@
             
             // Re-enable deck clicking for the new turn player
             if (data.newCurrentPlayer === myPlayerNumber && data.currentTurn > 1) {
-                document.getElementById('my-deck').classList.remove('disabled');
                 document.getElementById('my-deck-right').classList.remove('disabled');
             }
             
@@ -2316,16 +2305,14 @@
             updateDeckCount();
             updateButtonStates();
             
-            document.getElementById('my-deck').classList.add('disabled');
             document.getElementById('my-deck-right').classList.add('disabled');
             
             showCombatLog("Drew 1 card from deck!", 1500);
         }
 
         function updateDeckCount() {
-            // Update both deck displays to show my deck count
+            // Update the deck display to show my deck count
             const myDeckSize = gameState[`player${myPlayerNumber}`].deckSize;
-            document.getElementById('my-deck-count').textContent = myDeckSize;
             document.getElementById('my-deck-right-count').textContent = myDeckSize;
         }
 
@@ -2473,13 +2460,13 @@
         function updateButtonStates() {
             const rollDiceBtn = document.getElementById('roll-dice');
             const endTurnBtns = document.querySelectorAll('[id*="end-turn"]');
-            const myDecks = document.querySelectorAll('#my-deck, #my-deck-right');
+            const myDeck = document.getElementById('my-deck-right');
             
             // Disable everything if game hasn't started
             if (!gameStarted) {
                 rollDiceBtn.disabled = true;
                 endTurnBtns.forEach(btn => btn.disabled = true);
-                myDecks.forEach(deck => deck.classList.add('disabled'));
+                myDeck.classList.add('disabled');
                 return;
             }
             
@@ -2491,13 +2478,11 @@
             
             // Enable/disable deck based on turn and draw status
             const canDraw = isMyTurn && !hasDrawnThisTurn && currentTurn > 1 && gameState[`player${myPlayerNumber}`].deckSize > 0;
-            myDecks.forEach(deck => {
-                if (canDraw) {
-                    deck.classList.remove('disabled');
-                } else {
-                    deck.classList.add('disabled');
-                }
-            });
+            if (canDraw) {
+                myDeck.classList.remove('disabled');
+            } else {
+                myDeck.classList.add('disabled');
+            }
             
             // Only enable end turn buttons on your turn
             endTurnBtns.forEach(btn => {
@@ -2678,7 +2663,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('my-deck').addEventListener('click', () => drawCardFromDeck());
             document.getElementById('my-deck-right').addEventListener('click', () => drawCardFromDeck());
             document.getElementById('cancel-smack-btn').addEventListener('click', hideSmackModal);
             
