@@ -385,27 +385,27 @@
 
         }
 
-        #player1-hand .card {
+        #player1-hand .card, #player2-hand .card {
             transform: translateY(0);
             z-index: 1;
         }
 
-        #player1-hand .card:not(:first-child) {
+        #player1-hand .card:not(:first-child), #player2-hand .card:not(:first-child) {
             transform: translateY(2px);
             z-index: auto;
         }
 
-        #player1-hand:hover .card {
+        #player1-hand:hover .card, #player2-hand:hover .card {
             transform: translateY(0) !important;
         }
 
-        #player1-hand:hover .card:nth-child(1) { transform: translateX(-80px) !important; z-index: 1; }
-        #player1-hand:hover .card:nth-child(2) { transform: translateX(-40px) !important; z-index: 2; }
-        #player1-hand:hover .card:nth-child(3) { transform: translateX(0) !important; z-index: 3; }
-        #player1-hand:hover .card:nth-child(4) { transform: translateX(40px) !important; z-index: 4; }
-        #player1-hand:hover .card:nth-child(5) { transform: translateX(80px) !important; z-index: 5; }
+        #player1-hand:hover .card:nth-child(1), #player2-hand:hover .card:nth-child(1) { transform: translateX(-80px) !important; z-index: 1; }
+        #player1-hand:hover .card:nth-child(2), #player2-hand:hover .card:nth-child(2) { transform: translateX(-40px) !important; z-index: 2; }
+        #player1-hand:hover .card:nth-child(3), #player2-hand:hover .card:nth-child(3) { transform: translateX(0) !important; z-index: 3; }
+        #player1-hand:hover .card:nth-child(4), #player2-hand:hover .card:nth-child(4) { transform: translateX(40px) !important; z-index: 4; }
+        #player1-hand:hover .card:nth-child(5), #player2-hand:hover .card:nth-child(5) { transform: translateX(80px) !important; z-index: 5; }
 
-        #player1-hand .card:hover {
+        #player1-hand .card:hover, #player2-hand .card:hover {
             transform: translateY(-20px) scale(1.1) !important;
             z-index: 10 !important;
         }
@@ -697,19 +697,15 @@
                 <div class="stat hand-count">🃏 <span id="player2-hand-display">5</span></div>
             </div>
         </div>
-        <div class="hand-area" id="player2-hand-area">
-            <div class="hand-header">Player 2 Hand (<span id="player2-hand-count">5</span> cards)</div>
-            <div class="hand-cards" id="player2-hand"></div>
-        </div>
 
         <div class="main-content">
             <!-- Left Panel - Game Board -->
             <div class="left-panel">
                 <div class="board-container">
                     <div class="deck-areas">
-                        <div class="deck player2-deck" id="player2-deck">
-                            <div class="deck-label">P2 DECK</div>
-                            <div class="deck-count" id="player2-deck-count">30</div>
+                        <div class="deck" id="my-deck">
+                            <div class="deck-label">MY DECK</div>
+                            <div class="deck-count" id="my-deck-count">30</div>
                         </div>
                         <div class="field-controls">
                             <button class="field-btn" id="end-turn-left" onclick="endTurn()">End Turn</button>
@@ -817,10 +813,10 @@
                         </div>
                     </div>
 
-                    <!-- Player 1 Deck -->
-                    <div class="deck" id="player1-deck">
-                        <div class="deck-label">P1 DECK</div>
-                        <div class="deck-count" id="player1-deck-count">30</div>
+                    <!-- My Deck -->
+                    <div class="deck" id="my-deck-right">
+                        <div class="deck-label">MY DECK</div>
+                        <div class="deck-count" id="my-deck-right-count">30</div>
                     </div>
                     
                     <!-- Player 1 Controls -->
@@ -835,6 +831,12 @@
                 <div class="hand-area" id="player1-hand-area">
                     <div class="hand-header">Player 1 Hand (<span id="player1-hand-count">5</span> cards)</div>
                     <div class="hand-cards" id="player1-hand"></div>
+                </div>
+
+                <!-- Player 2 Hand -->
+                <div class="hand-area" id="player2-hand-area">
+                    <div class="hand-header">Player 2 Hand (<span id="player2-hand-count">5</span> cards)</div>
+                    <div class="hand-cards" id="player2-hand"></div>
                 </div>
             </div>
         </div>
@@ -1878,26 +1880,30 @@
             // Draw a card from the pool (no duplicates)
             const newCard = getRandomCard();
             gameState[`player${player}`].hand.push(newCard);
-            // Deck size is now the number of cards left in the pool
-            gameState[`player${player}`].deckSize = cardPool.length;
+            // Update deck sizes for both players since they share the same pool
+            gameState.player1.deckSize = cardPool.length;
+            gameState.player2.deckSize = cardPool.length;
             updateDeckCount();
             return true;
         }
 
-        function drawCardFromDeck(player) {
-            if (hasDrawnThisTurn || currentTurn === 1 || player !== currentPlayer) return;
+        function drawCardFromDeck() {
+            if (hasDrawnThisTurn || currentTurn === 1 || currentPlayer !== myPlayerNumber) return;
             
-            const success = drawCard(player);
+            const success = drawCard(myPlayerNumber);
             if (success) {
                 hasDrawnThisTurn = true;
                 updateHandDisplay();
-                document.getElementById(`player${player}-deck`).classList.add('disabled');
+                document.getElementById('my-deck').classList.add('disabled');
+                document.getElementById('my-deck-right').classList.add('disabled');
             }
         }
 
         function updateDeckCount() {
-            document.getElementById('player1-deck-count').textContent = cardPool.length;
-            document.getElementById('player2-deck-count').textContent = cardPool.length;
+            // Update both deck displays to show my deck count
+            const myDeckSize = gameState[`player${myPlayerNumber}`].deckSize;
+            document.getElementById('my-deck-count').textContent = myDeckSize;
+            document.getElementById('my-deck-right-count').textContent = myDeckSize;
         }
 
         function showDamageNumber(element, damage) {
@@ -2016,11 +2022,23 @@
         function updateButtonStates() {
             const rollDiceBtn = document.getElementById('roll-dice');
             const endTurnBtns = document.querySelectorAll('[id*="end-turn"]');
+            const myDecks = document.querySelectorAll('#my-deck, #my-deck-right');
             
             // Check if player has rolled dice this turn
             const hasMagic = gameState[`player${currentPlayer}`].magic > 0;
             
             rollDiceBtn.disabled = hasMagic;
+            
+            // Enable/disable deck based on turn and draw status
+            const canDraw = currentPlayer === myPlayerNumber && !hasDrawnThisTurn && currentTurn > 1;
+            myDecks.forEach(deck => {
+                if (canDraw) {
+                    deck.classList.remove('disabled');
+                } else {
+                    deck.classList.add('disabled');
+                }
+            });
+            
             // Always keep ALL end turn buttons enabled
             endTurnBtns.forEach(btn => {
                 btn.disabled = false;
@@ -2145,8 +2163,8 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('player1-deck').addEventListener('click', () => drawCardFromDeck(1));
-            document.getElementById('player2-deck').addEventListener('click', () => drawCardFromDeck(2));
+            document.getElementById('my-deck').addEventListener('click', () => drawCardFromDeck());
+            document.getElementById('my-deck-right').addEventListener('click', () => drawCardFromDeck());
             document.getElementById('cancel-smack-btn').addEventListener('click', hideSmackModal);
             
             // Don't deal initial cards - server handles this

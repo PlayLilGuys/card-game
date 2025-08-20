@@ -323,6 +323,10 @@ function initializeGame() {
             sharedGameState.player2.hand.push(card2);
         }
     }
+    
+    // Set deck sizes to remaining cards in shared pool
+    sharedGameState.player1.deckSize = sharedCardPool.length;
+    sharedGameState.player2.deckSize = sharedCardPool.length;
 }
 
 // Serve all files in the "public" folder
