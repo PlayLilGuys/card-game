@@ -1085,8 +1085,11 @@
 
         // Function to handle opponent's card play
         function handleOpponentCardPlay(data) {
-            // Apply the opponent's move to local game state
-            addCardToBoard(data.playerId === socket.id ? 1 : 2, data.lane, data.type, data.card);
+            // Use the player number sent from server
+            const opponentPlayerNumber = data.playerNumber;
+            
+            // Apply the opponent's move to local game state and visual board
+            addCardToBoard(opponentPlayerNumber, data.lane, data.type, data.card);
             updateAllDisplays();
         }
 

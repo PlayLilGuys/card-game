@@ -396,8 +396,15 @@ io.on("connection", (socket) => {
     if (!gameStarted) return;
     
     console.log(`Player ${socket.id} played card:`, data.card.name, "in lane", data.lane);
+    
+    // Determine player number based on connection order
+    const playerIds = Object.keys(playersReady);
+    const playerIndex = playerIds.indexOf(socket.id);
+    const playerNumber = playerIndex + 1; // 1 or 2
+    
     socket.broadcast.emit("cardPlayed", {
       playerId: socket.id,
+      playerNumber: playerNumber,
       card: data.card,
       lane: data.lane,
       type: data.type,
