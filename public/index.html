@@ -787,7 +787,7 @@
                     <div class="player-info player1-info">
                         <div>Player 1 (Wizard)</div>
                         <div class="wizard-stats">
-                            <div class="stat health">❤️ <span id="player1-health">25</span></div>
+                            <div class="stat health">❤️ <span id="player1-health">50</span></div>
                             <div class="stat magic">✨ <span id="player1-magic">0</span></div>
                             <div class="stat hand-count">🃏 <span id="player1-hand-display">5</span></div>
                         </div>
@@ -810,7 +810,7 @@
                     <div class="player-info player2-info">
                         <div>Opponent (Wizard)</div>
                         <div class="wizard-stats">
-                            <div class="stat health">❤️ <span id="player2-health">25</span></div>
+                            <div class="stat health">❤️ <span id="player2-health">50</span></div>
                             <div class="stat magic">✨ <span id="player2-magic">0</span></div>
                             <div class="stat hand-count">🃏 <span id="player2-hand-display">5</span></div>
                         </div>
@@ -1157,7 +1157,7 @@
         
         let gameState = {
             player1: {
-                health: 25,
+                health: 50,
                 magic: 0,
                 hand: [],
                 deckSize: 30,
@@ -1172,7 +1172,7 @@
                 }
             },
             player2: {
-                health: 25,
+                health: 50,
                 magic: 0,
                 hand: [],
                 deckSize: 30,
@@ -1823,8 +1823,8 @@
                                 const enemyBuilding = gameState[`player${enemyPlayer}`].board[lane].building;
                                 if (enemyBuilding && enemyBuilding.onMonsterDeath === 'heal_wizard_5') {
                                     gameState[`player${enemyPlayer}`].health += 5;
-                                    if (gameState[`player${enemyPlayer}`].health > 25) {
-                                        gameState[`player${enemyPlayer}`].health = 25;
+                                    if (gameState[`player${enemyPlayer}`].health > 50) {
+                                        gameState[`player${enemyPlayer}`].health = 50;
                                     }
                                     showCombatLog(`Healing Shrine heals enemy wizard for 5!`, 1000);
                                 }
@@ -1853,8 +1853,8 @@
                     break;
                 case 'heal_wizard':
                     gameState[`player${currentPlayer}`].health += 5;
-                    if (gameState[`player${currentPlayer}`].health > 25) {
-                        gameState[`player${currentPlayer}`].health = 25;
+                    if (gameState[`player${currentPlayer}`].health > 50) {
+                        gameState[`player${currentPlayer}`].health = 50;
                     }
                     updateStatsDisplay(); // Use perspective-based update instead
                     checkGameOver();
@@ -1994,8 +1994,8 @@
                                         const enemyBuilding = gameState[`player${enemyPlayer}`].board[targetLane].building;
                                         if (enemyBuilding && enemyBuilding.onMonsterDeath === 'heal_wizard_5') {
                                             gameState[`player${enemyPlayer}`].health += 5;
-                                            if (gameState[`player${enemyPlayer}`].health > 25) {
-                                                gameState[`player${enemyPlayer}`].health = 25;
+                                            if (gameState[`player${enemyPlayer}`].health > 50) {
+                                                gameState[`player${enemyPlayer}`].health = 50;
                                             }
                                             showCombatLog(`Healing Shrine heals enemy wizard for 5!`, 1000);
                                         }
@@ -2397,8 +2397,8 @@
                             const defendingBuilding = gameState[`player${defendingPlayer}`].board[lane].building;
                             if (defendingBuilding && defendingBuilding.onMonsterDeath === 'heal_wizard_5') {
                                 gameState[`player${defendingPlayer}`].health += 5;
-                                if (gameState[`player${defendingPlayer}`].health > 25) {
-                                    gameState[`player${defendingPlayer}`].health = 25;
+                                if (gameState[`player${defendingPlayer}`].health > 50) {
+                                    gameState[`player${defendingPlayer}`].health = 50;
                                 }
                                 combatMessages.push(`Healing Shrine heals Player ${defendingPlayer} for 5!`);
                             }

@@ -325,7 +325,7 @@ function initializeGame() {
     // Initialize shared game state
     sharedGameState = {
         player1: {
-            health: 25,
+            health: 50,
             magic: 0,
             hand: [],
             deckSize: 19, // Will be updated after dealing cards
@@ -339,7 +339,7 @@ function initializeGame() {
             }
         },
         player2: {
-            health: 25,
+            health: 50,
             magic: 0,
             hand: [],
             deckSize: 19, // Will be updated after dealing cards
