@@ -1064,6 +1064,12 @@
             // Reset turn-specific states
             hasDrawnThisTurn = false;
             
+            // Re-enable deck clicking for the new turn player
+            if (data.newCurrentPlayer === myPlayerNumber && data.currentTurn > 1) {
+                document.getElementById('my-deck').classList.remove('disabled');
+                document.getElementById('my-deck-right').classList.remove('disabled');
+            }
+            
             updateTurnDisplay();
             updateHandDisplay();
             updateButtonStates();
@@ -2074,15 +2080,50 @@
         }
 
         function drawCardFromDeck() {
-            if (!gameStarted || hasDrawnThisTurn || currentTurn === 1 || currentPlayer !== myPlayerNumber) return;
-            
-            const success = drawCard(myPlayerNumber);
-            if (success) {
-                hasDrawnThisTurn = true;
-                updateHandDisplay();
-                document.getElementById('my-deck').classList.add('disabled');
-                document.getElementById('my-deck-right').classList.add('disabled');
+            if (!gameStarted) {
+                showCombatLog("Wait for game to start!", 1500);
+                return;
             }
+            
+            if (hasDrawnThisTurn) {
+                showCombatLog("Already drew a card this turn!", 1500);
+                return;
+            }
+            
+            if (currentTurn === 1) {
+                showCombatLog("Cannot draw cards on turn 1!", 1500);
+                return;
+            }
+            
+            if (currentPlayer !== myPlayerNumber) {
+                showCombatLog("It's not your turn!", 1500);
+                return;
+            }
+            
+            // Check if there are cards left in deck
+            if (gameState[`player${myPlayerNumber}`].deckSize <= 0) {
+                showCombatLog("No cards left in deck!", 1500);
+                return;
+            }
+            
+            console.log(`Player ${myPlayerNumber} drawing card from deck`);
+            
+            // For now, just add a random card from the customCards array since server doesn't handle draws yet
+            const randomCard = {...customCards[Math.floor(Math.random() * customCards.length)]};
+            randomCard.uniqueId = cardIdCounter++;
+            
+            gameState[`player${myPlayerNumber}`].hand.push(randomCard);
+            gameState[`player${myPlayerNumber}`].deckSize--;
+            
+            hasDrawnThisTurn = true;
+            updateHandDisplay();
+            updateDeckCount();
+            updateButtonStates();
+            
+            document.getElementById('my-deck').classList.add('disabled');
+            document.getElementById('my-deck-right').classList.add('disabled');
+            
+            showCombatLog("Drew 1 card from deck!", 1500);
         }
 
         function updateDeckCount() {
@@ -2243,7 +2284,7 @@
             rollDiceBtn.disabled = !isMyTurn || hasMagic;
             
             // Enable/disable deck based on turn and draw status
-            const canDraw = isMyTurn && !hasDrawnThisTurn && currentTurn > 1;
+            const canDraw = isMyTurn && !hasDrawnThisTurn && currentTurn > 1 && gameState[`player${myPlayerNumber}`].deckSize > 0;
             myDecks.forEach(deck => {
                 if (canDraw) {
                     deck.classList.remove('disabled');
