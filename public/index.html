@@ -988,6 +988,10 @@
             console.log("Game started! Received game state from server");
             gameState = serverGameState;
             
+            // Set turn state from server
+            currentPlayer = serverGameState.currentPlayer || 1;
+            currentTurn = serverGameState.currentTurn || 1;
+            
             // Clear local card pool since server manages it now
             cardPool.length = 0;
             
@@ -1037,10 +1041,28 @@
 
         // Listen for turn ends from other players
         socket.on("turnEnded", (data) => {
+            console.log("Turn ended by", data.playerId);
+            console.log("New current player:", data.newCurrentPlayer);
+            console.log("New turn:", data.currentTurn);
+            
+            // Update local turn state from server
+            currentPlayer = data.newCurrentPlayer;
+            currentTurn = data.currentTurn;
+            
+            // Update game state if provided
+            if (data.gameState) {
+                gameState = data.gameState;
+            }
+            
+            // Reset turn-specific states
+            hasDrawnThisTurn = false;
+            
+            updateTurnDisplay();
+            updateHandDisplay();
+            updateButtonStates();
+            updateSmackButtonStates();
+            
             if (data.playerId !== socket.id) {
-                currentPlayer = data.newCurrentPlayer;
-                currentTurn = data.currentTurn;
-                updateTurnDisplay();
                 showCombatLog(`Opponent ended their turn`, 1500);
             }
         });
@@ -2112,31 +2134,10 @@
             
             performCombat();
             
-            currentPlayer = currentPlayer === 1 ? 2 : 1;
-            
-            if (currentPlayer === 1) {
-                currentTurn++;
-            }
-            
-            const prevPlayer = currentPlayer === 1 ? 2 : 1;
-            gameState[`player${prevPlayer}`].magic = 0;
-            document.getElementById(`player${prevPlayer}-magic`).textContent = 0;
-            
-            gameState[`player${currentPlayer}`].usedSmacks = [];
-            hasDrawnThisTurn = false;
-            
-            updateTurnDisplay();
-            
-            updateHandDisplay();
-            updateSmackButtonStates();
-            updateButtonStates();
-            
-            // Broadcast turn end to other players
+            // Broadcast turn end to server - let server handle turn state changes
             if (socketConnected) {
                 socket.emit("endTurn", {
-                    playerId: socket.id,
-                    newCurrentPlayer: currentPlayer,
-                    currentTurn: currentTurn
+                    playerId: socket.id
                 });
             }
         }

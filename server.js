@@ -13,6 +13,8 @@ let playersReady = {};
 let gameStarted = false;
 let sharedCardPool = [];
 let sharedGameState = null;
+let currentPlayer = 1;
+let currentTurn = 1;
 
 // Initialize shared card pool
 const customCards = [
@@ -373,8 +375,18 @@ io.on("connection", (socket) => {
     
     if (readyPlayers.length === 2 && totalPlayers === 2 && !gameStarted) {
       gameStarted = true;
+      currentPlayer = 1; // Reset turn state
+      currentTurn = 1;
       initializeGame();
-      io.emit("gameStarted", sharedGameState);
+      
+      // Send game state with turn info
+      const gameStartData = {
+        ...sharedGameState,
+        currentPlayer: currentPlayer,
+        currentTurn: currentTurn
+      };
+      
+      io.emit("gameStarted", gameStartData);
       console.log("Game started with 2 players!");
     }
   });
@@ -410,11 +422,26 @@ io.on("connection", (socket) => {
     if (!gameStarted) return;
     
     console.log(`Player ${socket.id} ended turn`);
-    socket.broadcast.emit("turnEnded", {
+    
+    // Update server-side turn state
+    currentPlayer = currentPlayer === 1 ? 2 : 1;
+    if (currentPlayer === 1) {
+      currentTurn++;
+    }
+    
+    // Reset magic for previous player
+    const prevPlayer = currentPlayer === 1 ? 2 : 1;
+    sharedGameState[`player${prevPlayer}`].magic = 0;
+    
+    // Broadcast turn change to all players
+    io.emit("turnEnded", {
       playerId: socket.id,
-      newCurrentPlayer: data.newCurrentPlayer,
-      currentTurn: data.currentTurn
+      newCurrentPlayer: currentPlayer,
+      currentTurn: currentTurn,
+      gameState: sharedGameState
     });
+    
+    console.log(`Turn ended. Now it's Player ${currentPlayer}'s turn. Turn ${currentTurn}`);
   });
 
   // When a player disconnects
