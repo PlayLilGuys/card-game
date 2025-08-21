@@ -1070,6 +1070,33 @@
             }
         });
 
+        // Listen for card draw results
+        socket.on("drawCardResult", (data) => {
+            if (data.success) {
+                console.log("Successfully drew card:", data.card.name);
+                gameState = data.gameState;
+                updateAllDisplays();
+                showCombatLog(`Drew ${data.card.name}!`, 1500);
+            } else {
+                console.log("Failed to draw card:", data.message);
+                showCombatLog(data.message, 1500);
+            }
+        });
+
+        // Listen for multiple card draw results
+        socket.on("drawMultipleCardsResult", (data) => {
+            if (data.success) {
+                console.log(`Successfully drew ${data.count} cards:`, data.cards.map(c => c.name));
+                gameState = data.gameState;
+                updateAllDisplays();
+                const cardNames = data.cards.map(c => c.name).join(', ');
+                showCombatLog(`Drew ${data.count} cards: ${cardNames}!`, 2000);
+            } else {
+                console.log("Failed to draw cards:", data.message);
+                showCombatLog(data.message, 1500);
+            }
+        });
+
         // Function to send card play to server
         function broadcastCardPlay(card, lane, type) {
             if (socketConnected) {
@@ -1878,11 +1905,29 @@
                     showCombatLog(`Shielded from damage next turn!`, 2000);
                     break;
                 case 'draw_2_cards':
-                    for (let i = 0; i < 2; i++) {
-                        drawCard(currentPlayer);
+                    // Send request to server to draw 2 cards
+                    if (socketConnected) {
+                        socket.emit("drawMultipleCards", {
+                            playerId: socket.id,
+                            playerNumber: currentPlayer,
+                            count: 2
+                        });
+                    } else {
+                        // Fallback for offline mode
+                        let cardsDrawn = 0;
+                        for (let i = 0; i < 2; i++) {
+                            if (cardPool.length > 0) {
+                                const drawnCard = cardPool.splice(Math.floor(Math.random() * cardPool.length), 1)[0];
+                                gameState[`player${currentPlayer}`].hand.push(drawnCard);
+                                gameState.player1.deckSize = cardPool.length;
+                                gameState.player2.deckSize = cardPool.length;
+                                cardsDrawn++;
+                            }
+                        }
+                        updateHandDisplay();
+                        updateDeckCount();
+                        showCombatLog(`Drew ${cardsDrawn} cards!`, 2000);
                     }
-                    updateHandDisplay();
-                    showCombatLog(`Drew 2 cards!`, 2000);
                     break;
                 case 'direct_hit_p2':
                     gameState.player2.health -= 2;
@@ -2294,12 +2339,24 @@
             
             console.log(`Player ${myPlayerNumber} drawing card from deck`);
             
-            // For now, just add a random card from the customCards array since server doesn't handle draws yet
-            const randomCard = {...customCards[Math.floor(Math.random() * customCards.length)]};
-            randomCard.uniqueId = cardIdCounter++;
-            
-            gameState[`player${myPlayerNumber}`].hand.push(randomCard);
-            gameState[`player${myPlayerNumber}`].deckSize--;
+            // Send draw request to server instead of generating locally
+            if (socketConnected) {
+                socket.emit("drawCard", {
+                    playerId: socket.id,
+                    playerNumber: myPlayerNumber
+                });
+            } else {
+                // Fallback for offline mode - use local card pool properly
+                if (cardPool.length > 0) {
+                    const drawnCard = cardPool.splice(Math.floor(Math.random() * cardPool.length), 1)[0];
+                    gameState[`player${myPlayerNumber}`].hand.push(drawnCard);
+                    gameState[`player${myPlayerNumber}`].deckSize = cardPool.length;
+                    gameState[`player${myPlayerNumber === 1 ? 2 : 1}`].deckSize = cardPool.length;
+                } else {
+                    showCombatLog("No cards left in deck!", 1500);
+                    return;
+                }
+            }
             
             hasDrawnThisTurn = true;
             updateHandDisplay();

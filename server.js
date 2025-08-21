@@ -330,6 +330,7 @@ function initializeGame() {
             hand: [],
             deckSize: 19, // Will be updated after dealing cards
             usedSmacks: [],
+            usedBuildings: [],
             nextTurnMagicBonus: 0,
             board: {
                 1: { monster: null, building: null },
@@ -344,6 +345,7 @@ function initializeGame() {
             hand: [],
             deckSize: 19, // Will be updated after dealing cards
             usedSmacks: [],
+            usedBuildings: [],
             nextTurnMagicBonus: 0,
             board: {
                 1: { monster: null, building: null },
@@ -495,6 +497,79 @@ io.on("connection", (socket) => {
     });
     
     console.log(`Turn ended. Now it's Player ${currentPlayer}'s turn. Turn ${currentTurn}`);
+  });
+
+  // Handle card draws
+  socket.on("drawCard", (data) => {
+    if (!gameStarted) return;
+    
+    console.log(`Player ${socket.id} wants to draw a card`);
+    
+    // Check if there are cards left in shared pool
+    if (sharedCardPool.length === 0) {
+      socket.emit("drawCardResult", { success: false, message: "No cards left in deck!" });
+      return;
+    }
+    
+    // Draw a random card from shared pool
+    const randomIndex = Math.floor(Math.random() * sharedCardPool.length);
+    const drawnCard = sharedCardPool.splice(randomIndex, 1)[0];
+    
+    // Add card to player's hand
+    sharedGameState[`player${data.playerNumber}`].hand.push(drawnCard);
+    
+    // Update deck sizes for both players
+    sharedGameState.player1.deckSize = sharedCardPool.length;
+    sharedGameState.player2.deckSize = sharedCardPool.length;
+    
+    console.log(`Player ${data.playerNumber} drew card: ${drawnCard.name}`);
+    
+    // Send the drawn card and updated game state to the player who drew
+    socket.emit("drawCardResult", { 
+      success: true, 
+      card: drawnCard, 
+      gameState: sharedGameState 
+    });
+    
+    // Broadcast updated game state to other players
+    socket.broadcast.emit("gameStateUpdate", sharedGameState);
+  });
+
+  // Handle drawing multiple cards
+  socket.on("drawMultipleCards", (data) => {
+    if (!gameStarted) return;
+    
+    console.log(`Player ${socket.id} wants to draw ${data.count} cards`);
+    
+    const drawnCards = [];
+    const requestedCount = data.count;
+    
+    // Draw the requested number of cards (or as many as available)
+    for (let i = 0; i < requestedCount && sharedCardPool.length > 0; i++) {
+      const randomIndex = Math.floor(Math.random() * sharedCardPool.length);
+      const drawnCard = sharedCardPool.splice(randomIndex, 1)[0];
+      drawnCards.push(drawnCard);
+      
+      // Add card to player's hand
+      sharedGameState[`player${data.playerNumber}`].hand.push(drawnCard);
+    }
+    
+    // Update deck sizes for both players
+    sharedGameState.player1.deckSize = sharedCardPool.length;
+    sharedGameState.player2.deckSize = sharedCardPool.length;
+    
+    console.log(`Player ${data.playerNumber} drew ${drawnCards.length} cards: ${drawnCards.map(c => c.name).join(', ')}`);
+    
+    // Send the drawn cards and updated game state to the player who drew
+    socket.emit("drawMultipleCardsResult", { 
+      success: true, 
+      cards: drawnCards, 
+      count: drawnCards.length,
+      gameState: sharedGameState 
+    });
+    
+    // Broadcast updated game state to other players
+    socket.broadcast.emit("gameStateUpdate", sharedGameState);
   });
 
   // When a player disconnects
